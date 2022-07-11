@@ -1,0 +1,52 @@
+{
+  "name": "lox",
+  "scopeName": "source.lox",
+  "fileTypes": [
+    ".lox"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "name": "keyword.control.lox",
+      "match": "\\b(and|else|false|for|fun|if|nil|or|print|return|true|var|while)\\b"
+    },
+    {
+      "name": "string.quoted.double.lox",
+      "begin": "\"",
+      "end": "\""
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.lox",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.lox"
+            }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.lox"
+            }
+          }
+        },
+        {
+          "begin": "//",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.whitespace.comment.leading.lox"
+            }
+          },
+          "end": "(?=$)",
+          "name": "comment.line.lox"
+        }
+      ]
+    }
+  }
+}
