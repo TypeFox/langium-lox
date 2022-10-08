@@ -4,6 +4,7 @@ entry LoxProgram:
     elements+=LoxElement*;
 
 LoxElement: 
+    Class |
     ExpressionBlock | 
     IfStatement |
     WhileStatement |
@@ -37,7 +38,7 @@ ExpressionBlock: '{'
 '}';
 
 VariableDeclaration returns NamedElement:
-    {infer VariableDeclaration} 'var' name=ID ('=' value=Expression)?
+    {infer VariableDeclaration} 'var' name=ID (':' type=TypeReference)? ('=' value=Expression)?
 ;
 
 Expression:
@@ -53,7 +54,20 @@ Logical infers Expression:
     Comparison ({infer BinaryExpression.left=current} operator=('and' | 'or') right=Comparison)*;
 
 Comparison infers Expression:
-    Primary ({infer BinaryExpression.left=current} operator=('<' | '<=' | '>' | '>=' | '==' | '!=') right=Primary)*;
+    Assignment ({infer BinaryExpression.left=current} operator=('<' | '<=' | '>' | '>=' | '==' | '!=') right=Assignment)*;
+
+Assignment infers Expression:
+    MemberCall ({infer BinaryExpression.left=current} operator=('=') right=MemberCall)*;
+
+MemberCall infers Expression:
+    Primary
+	({infer MemberCall.previous=current} ("." element=[NamedElement:ID])? (
+			explicitOperationCall?='('
+				(
+				    arguments+=Expression (',' arguments+=Expression)*
+				)?
+			')')?
+    )*;
 
 Primary infers Expression:
     '(' Expression ')' |
@@ -62,17 +76,15 @@ Primary infers Expression:
     BooleanExpression |
     NumberExpression |
     NilExpression |
-    MemberCall;
+    ConstructorCall |
+    FeatureCall;
 
-MemberCall:
-    // Reference another named element
-    element=[NamedElement:ID] 
-    // Optionally allow a function call at this point
-    ({infer FunctionCall.previous=current} '(' (arguments+=Expression (',' arguments+=Expression)*)? ')')* 
-    // Create a chain of membercalls, if the next token is a period
-    ({infer MemberCall.previous=current} '.' MemberCall)*
-    // Chain into an assignment if we see a `=` symbol
-    (assignment?='=' value=Expression)?;
+FeatureCall infers Expression:
+	{infer MemberCall}
+	(element=[NamedElement:ID] | element=[NamedElement:'this'] | element=[NamedElement:'super']);
+
+ConstructorCall: 
+    'new' type=[Class:ID] '(' (arguments+=Expression (',' arguments+=Expression)*)? ')';
 
 UnaryExpression:
    operator=('!' | '-' | '+') value=Expression
@@ -83,15 +95,30 @@ StringExpression: value=STRING;
 BooleanExpression: value?='true' | 'false';
 NilExpression: value='nil';
 
-FunctionDeclaration returns NamedElement:
-    {infer FunctionDeclaration} 'fun' name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' body=ExpressionBlock
-;
+FunctionDeclaration:
+    'fun' name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' ':' returnType=TypeReference body=ExpressionBlock;
 
-Parameter returns NamedElement: name=ID;
+Parameter: name=ID ':' type=TypeReference;
 
-interface NamedElement {
-    name: string
-}
+Class: 'class' name=ID '{'
+    members+=ClassMember*
+'}';
+
+ClassMember: MethodMember | FieldMember;
+
+MethodMember:
+    name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' ':' returnType=TypeReference body=ExpressionBlock;
+
+FieldMember:
+    name=ID ':' type=TypeReference;
+
+TypeReference: reference=[Class:ID] 
+    | primitive=("string" | "number" | "boolean" | "void") 
+    | '(' ( parameters+=LambdaParameter (',' parameters+=LambdaParameter)*)? ')' '=>' returnType=TypeReference;
+
+LambdaParameter: (name=ID ':')? type=TypeReference;
+
+type NamedElement = Parameter | FunctionDeclaration | VariableDeclaration | MethodMember | FieldMember;
 
 hidden terminal WS: /\s+/;
 terminal ID: /[_a-zA-Z][\w_]*/;

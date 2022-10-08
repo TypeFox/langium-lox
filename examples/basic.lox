@@ -80,36 +80,33 @@ for (var i = 1; i < 10; i = i + 1) {
 }
 
 // Functions
-fun printSum(a, b) {
+fun printSum(a: number, b: number): void {
     print a + b;
 }
 
-fun returnSum(a, b) {
+fun returnSum(a: number, b: number): number {
     return a + b;
 }
 
 // Closures
-fun addPair(a, b) {
-    return a + b;
-}
 
-fun identity(a) {
+fun identity(a: (number, number) => number): (number, number) => number {
     return a;
 }
 
-print identity(addPair)(1, 2); // prints "3";
+print identity(returnSum)(1, 2); // prints "3";
 
-fun outerFunction() {
-    fun localFunction() {
+fun outerFunction(): void {
+    fun localFunction(): void {
         print "I'm local!";
     }
     localFunction();
 }
 
-fun returnFunction() {
+fun returnFunction(): () => void {
     var outside = "outside";
 
-    fun inner() {
+    fun inner(): void {
         print outside;
     }
 
@@ -119,4 +116,16 @@ fun returnFunction() {
 var fn = returnFunction();
 fn();
 
-// Classes are yet to come...
+// Classes WIP
+
+class X {
+    y: Y
+}
+
+class Y {
+    value: string
+}
+
+var x: X;
+
+x.y.value;
