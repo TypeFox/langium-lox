@@ -134,3 +134,14 @@ export function createErrorType(message: string, source?: AstNode): ErrorType {
 export function isErrorType(item: TypeDescription): item is ErrorType {
     return item.$type === "error";
 }
+
+export function typeToString(item: TypeDescription): string {
+    if (isClassType(item)) {
+        return item.literal.name;
+    } else if (isFunctionType(item)) {
+        const params = item.parameters.map(e => `${e.name}: ${typeToString(e.type)}`).join(', ');
+        return `(${params}) => ${typeToString(item.returnType)}`;
+    } else {
+        return item.$type;
+    }
+}

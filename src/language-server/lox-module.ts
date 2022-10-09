@@ -5,6 +5,7 @@ import {
 import { LoxGeneratedModule, LoxGeneratedSharedModule } from './generated/module';
 import { LoxScopeProvider } from './lox-scope';
 import { LoxValidationRegistry, LoxValidator } from './lox-validator';
+import { LoxHoverProvider } from './lsp/lox-hover-provider';
 
 /**
  * Declaration of custom services - add your own service classes here.
@@ -33,6 +34,9 @@ export const LoxModule: Module<LoxServices, PartialLangiumServices & LoxAddedSer
     },
     references: {
         ScopeProvider: (services) => new LoxScopeProvider(services)
+    },
+    lsp: {
+        HoverProvider: (services) => new LoxHoverProvider(services)
     }
 };
 

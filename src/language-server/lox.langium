@@ -31,14 +31,14 @@ ForStatement:
 
 PrintStatement: 'print' value=Expression;
 
-ReturnStatement: 'return' value=Expression;
+ReturnStatement: 'return' value=Expression?;
 
 ExpressionBlock: '{'
     elements+=LoxElement*
 '}';
 
 VariableDeclaration returns NamedElement:
-    {infer VariableDeclaration} 'var' name=ID (':' type=TypeReference)? ('=' value=Expression)?
+    {infer VariableDeclaration} 'var' name=ID (':' type=TypeReference)? (assignment?='=' value=Expression)?
 ;
 
 Expression:
@@ -61,12 +61,21 @@ Assignment infers Expression:
 
 MemberCall infers Expression:
     Primary
-	({infer MemberCall.previous=current} ("." element=[NamedElement:ID])? (
-			explicitOperationCall?='('
-				(
-				    arguments+=Expression (',' arguments+=Expression)*
-				)?
-			')')?
+	({infer MemberCall.previous=current} 
+        // Member call with function call
+        ("." element=[NamedElement:ID] (
+		explicitOperationCall?='('
+		(
+		    arguments+=Expression (',' arguments+=Expression)*
+		)?
+		')')? 
+        // Chained function call
+        | (
+		explicitOperationCall?='('
+		(
+		    arguments+=Expression (',' arguments+=Expression)*
+		)?
+		')'))
     )*;
 
 Primary infers Expression:
@@ -76,15 +85,17 @@ Primary infers Expression:
     BooleanExpression |
     NumberExpression |
     NilExpression |
-    ConstructorCall |
     FeatureCall;
 
 FeatureCall infers Expression:
 	{infer MemberCall}
-	(element=[NamedElement:ID] | element=[NamedElement:'this'] | element=[NamedElement:'super']);
-
-ConstructorCall: 
-    'new' type=[Class:ID] '(' (arguments+=Expression (',' arguments+=Expression)*)? ')';
+	(element=[NamedElement:ID] | element=[NamedElement:'this'] | element=[NamedElement:'super'])
+    // Optional function call after referencing an element
+    (explicitOperationCall?='('
+	(
+	    arguments+=Expression (',' arguments+=Expression)*
+	)?
+	')')?;
 
 UnaryExpression:
    operator=('!' | '-' | '+') value=Expression
@@ -100,7 +111,7 @@ FunctionDeclaration:
 
 Parameter: name=ID ':' type=TypeReference;
 
-Class: 'class' name=ID '{'
+Class: 'class' name=ID ('<' superClass=[Class:ID])? '{'
     members+=ClassMember*
 '}';
 
@@ -118,7 +129,7 @@ TypeReference: reference=[Class:ID]
 
 LambdaParameter: (name=ID ':')? type=TypeReference;
 
-type NamedElement = Parameter | FunctionDeclaration | VariableDeclaration | MethodMember | FieldMember;
+type NamedElement = Parameter | FunctionDeclaration | VariableDeclaration | MethodMember | FieldMember | Class;
 
 hidden terminal WS: /\s+/;
 terminal ID: /[_a-zA-Z][\w_]*/;

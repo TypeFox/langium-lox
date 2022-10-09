@@ -18,12 +18,12 @@ nil; // This is nil/null
 // Expressions
 // Arithmetics
 var me = nil;
-var add = add + me;
-var subtract = subtract - me;
-var multiply = multiply * me;
-var divide = divide / me;
+var add = 23 + 41;
+var subtract = 13 - 4;
+var multiply = 13 * 4;
+var divide = 62 / 2;
 
-var negateMe = -negateMe;
+var negateMe = -add;
 
 // Comparison and equality
 var less = add < subtract;
@@ -118,14 +118,27 @@ fn();
 
 // Classes WIP
 
-class X {
+class SuperClass {
+    a: number
+}
+
+class X < SuperClass {
+    // Nested class
     y: Y
 }
 
 class Y {
     value: string
+    execute(): string {
+        return "execute this";
+    }
 }
 
-var x: X;
+// Constructor call
+var x = X();
 
-x.y.value;
+var value = x.y.execute() + "wasd";
+print value;
+
+var superValue = x.a;
+print superValue;

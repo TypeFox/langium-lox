@@ -1,7 +1,7 @@
 import { DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, LangiumServices, ReferenceInfo, Scope } from "langium";
 import { Class, isClass, MemberCall } from "./generated/ast";
 import { isClassType } from "./type-system/descriptions";
-import { inferType } from "./type-system/infer";
+import { getClassChain, inferType } from "./type-system/infer";
 
 export class LoxScopeProvider extends DefaultScopeProvider {
 
@@ -30,13 +30,13 @@ export class LoxScopeProvider extends DefaultScopeProvider {
             if (isClassType(previousType)) {
                 return this.scopeClassMembers(previousType.literal);
             }
-                
             return EMPTY_SCOPE;
         }
         return super.getScope(context);
     }
 
     private scopeClassMembers(classItem: Class): Scope {
-        return this.createScopeForNodes(classItem.members);
+        const allMembers = getClassChain(classItem).flatMap(e => e.members);
+        return this.createScopeForNodes(allMembers);
     }
 }

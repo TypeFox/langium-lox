@@ -1,16 +1,25 @@
 import { AstNode } from "langium";
-import { isBooleanExpression, isFieldMember, isFunctionDeclaration, isMemberCall, isMethodMember, isNumberExpression, isParameter, isStringExpression, isTypeReference, isVariableDeclaration, MemberCall, TypeReference } from "../generated/ast";
-import { createBooleanType, createClassType, createErrorType, createFunctionType, createNumberType, createStringType, createVoidType, isFunctionType, TypeDescription } from "./descriptions";
+import { BinaryExpression, Class, isBinaryExpression, isBooleanExpression, isClass, isFieldMember, isFunctionDeclaration, isMemberCall, isMethodMember, isNumberExpression, isParameter, isPrintStatement, isReturnStatement, isStringExpression, isTypeReference, isUnaryExpression, isVariableDeclaration, MemberCall, TypeReference } from "../generated/ast";
+import { createBooleanType, createClassType, createErrorType, createFunctionType, createNumberType, createStringType, createVoidType, isFunctionType, isStringType, TypeDescription } from "./descriptions";
 
-export function inferType(node: AstNode, cache: Map<AstNode, TypeDescription>): TypeDescription {
+export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDescription>): TypeDescription {
     let type: TypeDescription | undefined;
+    if (!node) {
+        return createErrorType('Could not infer type for undefined', node);
+    }
+    const existing = cache.get(node);
+    if (existing) {
+        return existing;
+    }
+    // Prevent recursive inference errors
+    cache.set(node, createErrorType('Recursive definition', node));
     if (isStringExpression(node)) {
         type = createStringType(node);
     } else if (isNumberExpression(node)) {
         type = createNumberType(node);
     } else if (isBooleanExpression(node)) {
         type = createBooleanType(node);
-    } else if (isFunctionDeclaration(node)) {
+    } else if (isFunctionDeclaration(node) || isMethodMember(node)) {
         const returnType = inferType(node.returnType, cache);
         const parameters = node.parameters.map(e => ({
             name: e.name,
@@ -36,15 +45,26 @@ export function inferType(node: AstNode, cache: Map<AstNode, TypeDescription>): 
         }
     } else if (isParameter(node)) {
         type = inferType(node.type, cache);
-    } else if (isMethodMember(node)) {
-        const returnType = inferType(node.returnType, cache);
-        const parameters = node.parameters.map(e => ({
-            name: e.name,
-            type: inferType(e.type, cache)
-        }));
-        type = createFunctionType(returnType, parameters);
     } else if (isFieldMember(node)) {
         type = inferType(node.type, cache);
+    } else if (isClass(node)) {
+        type = createClassType(node);
+    } else if (isBinaryExpression(node)) {
+        type = inferBinaryExpression(node, cache);
+    } else if (isUnaryExpression(node)) {
+        if (node.operator === '!') {
+            type = createBooleanType();
+        } else {
+            type = createNumberType();
+        }
+    } else if (isPrintStatement(node)) {
+        type = createVoidType();
+    } else if (isReturnStatement(node)) {
+        if (!node.value) {
+            type = createVoidType();
+        } else {
+            type = inferType(node.value, cache);
+        }
     }
     if (!type) {
         type = createErrorType('Could not infer type for ' + node.$type, node);
@@ -84,6 +104,44 @@ function inferMemberCall(node: MemberCall, cache: Map<AstNode, TypeDescription>)
     const element = node.element?.ref;
     if (element) {
         return inferType(element, cache);
+    } else if (node.explicitOperationCall && node.previous) {
+        const previousType = inferType(node.previous, cache);
+        if (isFunctionType(previousType)) {
+            return previousType.returnType;
+        }
+        return createErrorType('Cannot call operation on non-function type', node);
     }
     return createErrorType('Could not infer type for element ' + node.element?.$refText ?? 'undefined', node);
+}
+
+function inferBinaryExpression(expr: BinaryExpression, cache: Map<AstNode, TypeDescription>): TypeDescription {
+    if (['-', '*', '/', '%'].includes(expr.operator)) {
+        return createNumberType();
+    } else if (['and', 'or', '<', '<=', '>', '>=', '==', '!='].includes(expr.operator)) {
+        return createBooleanType();
+    }
+    const left = inferType(expr.left, cache);
+    const right = inferType(expr.right, cache);
+    if (expr.operator === '+') {
+        if (isStringType(left) || isStringType(right)) {
+            return createStringType();
+        } else {
+            return createNumberType();
+        }
+    } else if (expr.operator === '=') {
+        return right;
+    }
+    return createErrorType('Could not infer type from binary expression', expr);
+}
+
+export function getClassChain(classItem: Class): Class[] {
+    const set = new Set<Class>();
+    const chain: Class[] = [];
+    let value: Class | undefined = classItem;
+    while (value && !set.has(value)) {
+        chain.push(value);
+        set.add(value);
+        value = value.superClass?.ref;
+    }
+    return chain;
 }
