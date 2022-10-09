@@ -29,15 +29,6 @@ export class LoxValidationRegistry extends ValidationRegistry {
  */
 export class LoxValidator {
 
-    // checkPersonStartsWithCapital(person: Person, accept: ValidationAcceptor): void {
-    //     if (person.name) {
-    //         const firstChar = person.name.substring(0, 1);
-    //         if (firstChar.toUpperCase() !== firstChar) {
-    //             accept('warning', 'Person name should start with a capital.', { node: person, property: 'name' });
-    //         }
-    //     }
-    // }
-
     checkFunctionReturnType(func: FunctionDeclaration, accept: ValidationAcceptor): void {
         this.checkFunctionReturnTypeInternal(func.body, func.returnType, accept);
     }
@@ -77,6 +68,11 @@ export class LoxValidator {
                     property: 'value'
                 });
             }
+        } else if (!decl.type && !decl.value) {
+            accept('error', 'Variables require a type hint or an assignment at creation', {
+                node: decl,
+                property: 'name'
+            });
         }
     }
 

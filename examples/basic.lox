@@ -122,23 +122,32 @@ class SuperClass {
     a: number
 }
 
-class X < SuperClass {
+class SubClass < SuperClass {
     // Nested class
-    y: Y
+    nested: NestedClass
 }
 
-class Y {
-    value: string
-    execute(): string {
+class NestedClass {
+    field: string
+    method(): string {
         return "execute this";
     }
 }
 
 // Constructor call
-var x = X();
+var x = SubClass();
+// Assigning nil to a class type
+var nilTest = SubClass();
+nilTest = nil;
 
-var value = x.y.execute() + "wasd";
+// Accessing members of a class
+var value = x.nested.method() + "wasd";
 print value;
 
+// Accessing members of a super class
 var superValue = x.a;
 print superValue;
+
+// Assigning a subclass to a super class
+var superType: SuperClass = x;
+print superType.a;

@@ -8,6 +8,7 @@ import {
 } from "../generated/ast"
 
 export type TypeDescription =
+    | NilTypeDescription
     | VoidTypeDescription
     | BooleanTypeDescription
     | StringTypeDescription
@@ -15,6 +16,20 @@ export type TypeDescription =
     | FunctionTypeDescription
     | ClassTypeDescription
     | ErrorType;
+
+export interface NilTypeDescription {
+    readonly $type: "nil"
+}
+
+export function createNilType(): NilTypeDescription {
+    return {
+        $type: "nil"
+    };
+}
+
+export function isNilType(item: TypeDescription): item is NilTypeDescription {
+    return item.$type === "nil";
+}
 
 export interface VoidTypeDescription {
     readonly $type: "void"

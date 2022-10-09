@@ -1,6 +1,6 @@
 import { AstNode } from "langium";
-import { BinaryExpression, Class, isBinaryExpression, isBooleanExpression, isClass, isFieldMember, isFunctionDeclaration, isMemberCall, isMethodMember, isNumberExpression, isParameter, isPrintStatement, isReturnStatement, isStringExpression, isTypeReference, isUnaryExpression, isVariableDeclaration, MemberCall, TypeReference } from "../generated/ast";
-import { createBooleanType, createClassType, createErrorType, createFunctionType, createNumberType, createStringType, createVoidType, isFunctionType, isStringType, TypeDescription } from "./descriptions";
+import { BinaryExpression, Class, isBinaryExpression, isBooleanExpression, isClass, isFieldMember, isFunctionDeclaration, isMemberCall, isMethodMember, isNilExpression, isNumberExpression, isParameter, isPrintStatement, isReturnStatement, isStringExpression, isTypeReference, isUnaryExpression, isVariableDeclaration, MemberCall, TypeReference } from "../generated/ast";
+import { createBooleanType, createClassType, createErrorType, createFunctionType, createNilType, createNumberType, createStringType, createVoidType, isFunctionType, isStringType, TypeDescription } from "./descriptions";
 
 export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDescription>): TypeDescription {
     let type: TypeDescription | undefined;
@@ -19,6 +19,8 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
         type = createNumberType(node);
     } else if (isBooleanExpression(node)) {
         type = createBooleanType(node);
+    } else if (isNilExpression(node)) {
+        type = createNilType();
     } else if (isFunctionDeclaration(node) || isMethodMember(node)) {
         const returnType = inferType(node.returnType, cache);
         const parameters = node.parameters.map(e => ({
@@ -136,12 +138,11 @@ function inferBinaryExpression(expr: BinaryExpression, cache: Map<AstNode, TypeD
 
 export function getClassChain(classItem: Class): Class[] {
     const set = new Set<Class>();
-    const chain: Class[] = [];
     let value: Class | undefined = classItem;
     while (value && !set.has(value)) {
-        chain.push(value);
         set.add(value);
         value = value.superClass?.ref;
     }
-    return chain;
+    // Sets preserve insertion order
+    return Array.from(set);
 }

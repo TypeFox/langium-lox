@@ -1,4 +1,4 @@
-import { isClassType, isFunctionType, TypeDescription } from "./descriptions";
+import { isClassType, isFunctionType, isNilType, TypeDescription } from "./descriptions";
 import { getClassChain } from "./infer";
 
 export function isAssignable(from: TypeDescription, to: TypeDescription): boolean {
@@ -8,13 +8,16 @@ export function isAssignable(from: TypeDescription, to: TypeDescription): boolea
         }
         const fromLit = from.literal;
         const fromChain = getClassChain(fromLit);
-        const toLit = to.literal;
-        for (const fromItem of fromChain) {
-            if (fromItem === toLit) {
+        const toClass = to.literal;
+        for (const fromClass of fromChain) {
+            if (fromClass === toClass) {
                 return true;
             }
         }
         return false;
+    }
+    if (isNilType(from)) {
+        return isClassType(to);
     }
     if (isFunctionType(from)) {
         if (!isFunctionType(to)) {
