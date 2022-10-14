@@ -18,12 +18,12 @@ nil; // This is nil/null
 // Expressions
 // Arithmetics
 var me = nil;
-var add = add + me;
-var subtract = subtract - me;
-var multiply = multiply * me;
-var divide = divide / me;
+var add = 23 + 41;
+var subtract = 13 - 4;
+var multiply = 13 * 4;
+var divide = 62 / 2;
 
-var negateMe = -negateMe;
+var negateMe = -add;
 
 // Comparison and equality
 var less = add < subtract;
@@ -80,36 +80,33 @@ for (var i = 1; i < 10; i = i + 1) {
 }
 
 // Functions
-fun printSum(a, b) {
+fun printSum(a: number, b: number): void {
     print a + b;
 }
 
-fun returnSum(a, b) {
+fun returnSum(a: number, b: number): number {
     return a + b;
 }
 
 // Closures
-fun addPair(a, b) {
-    return a + b;
-}
 
-fun identity(a) {
+fun identity(a: (number, number) => number): (number, number) => number {
     return a;
 }
 
-print identity(addPair)(1, 2); // prints "3";
+print identity(returnSum)(1, 2); // prints "3";
 
-fun outerFunction() {
-    fun localFunction() {
+fun outerFunction(): void {
+    fun localFunction(): void {
         print "I'm local!";
     }
     localFunction();
 }
 
-fun returnFunction() {
+fun returnFunction(): () => void {
     var outside = "outside";
 
-    fun inner() {
+    fun inner(): void {
         print outside;
     }
 
@@ -119,4 +116,38 @@ fun returnFunction() {
 var fn = returnFunction();
 fn();
 
-// Classes are yet to come...
+// Classes WIP
+
+class SuperClass {
+    a: number
+}
+
+class SubClass < SuperClass {
+    // Nested class
+    nested: NestedClass
+}
+
+class NestedClass {
+    field: string
+    method(): string {
+        return "execute this";
+    }
+}
+
+// Constructor call
+var x = SubClass();
+// Assigning nil to a class type
+var nilTest = SubClass();
+nilTest = nil;
+
+// Accessing members of a class
+var value = x.nested.method() + "wasd";
+print value;
+
+// Accessing members of a super class
+var superValue = x.a;
+print superValue;
+
+// Assigning a subclass to a super class
+var superType: SuperClass = x;
+print superType.a;

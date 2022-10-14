@@ -3,7 +3,9 @@ import {
     LangiumServices, LangiumSharedServices, Module, PartialLangiumServices
 } from 'langium';
 import { LoxGeneratedModule, LoxGeneratedSharedModule } from './generated/module';
+import { LoxScopeProvider } from './lox-scope';
 import { LoxValidationRegistry, LoxValidator } from './lox-validator';
+import { LoxHoverProvider } from './lsp/lox-hover-provider';
 
 /**
  * Declaration of custom services - add your own service classes here.
@@ -29,6 +31,12 @@ export const LoxModule: Module<LoxServices, PartialLangiumServices & LoxAddedSer
     validation: {
         ValidationRegistry: (services) => new LoxValidationRegistry(services),
         LoxValidator: () => new LoxValidator()
+    },
+    references: {
+        ScopeProvider: (services) => new LoxScopeProvider(services)
+    },
+    lsp: {
+        HoverProvider: (services) => new LoxHoverProvider(services)
     }
 };
 
