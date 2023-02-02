@@ -3,12 +3,21 @@ import * as path from 'path';
 import {
     LanguageClient, LanguageClientOptions, ServerOptions, TransportKind
 } from 'vscode-languageclient/node';
+import { LoxNotebookSerializer } from './notebook/lox-notebook-serializer';
+import { LoxNotebookKernel } from './notebook/lox-notebook-kernel';
 
 let client: LanguageClient;
 
 // This function is called when the extension is activated.
 export function activate(context: vscode.ExtensionContext): void {
     client = startLanguageClient(context);
+
+    context.subscriptions.push(
+        vscode.workspace.registerNotebookSerializer(
+            'lox-notebook', new LoxNotebookSerializer(), { transientOutputs: true }
+        ),
+        new LoxNotebookKernel()
+    );
 }
 
 // This function is called when the extension is deactivated.
@@ -38,7 +47,15 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
-        documentSelector: [{ scheme: 'file', language: 'lox' }],
+        documentSelector: [
+            {
+                scheme: "file",
+                language: "lox"
+            }, {
+                scheme: 'vscode-notebook-cell', // only notebook cells
+                language: 'lox'
+            }
+        ],
         synchronize: {
             // Notify the server about file changes to files contained in the workspace
             fileEvents: fileSystemWatcher
