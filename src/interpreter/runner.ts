@@ -185,17 +185,23 @@ async function runExpression(expression: Expression, context: RunnerContext): Pr
     } else if (isUnaryExpression(expression)) {
         const { operator, value } = expression;
         const actualValue = await runExpression(value, context);
-        if (operator === '-') {
+        if (operator === '+') {
+            if (typeof actualValue === 'number') {
+                return actualValue;
+            } else {
+                throw new AstNodeError(expression, `Cannot apply operator '${operator}' to value of type '${typeof actualValue}'`);
+            }
+        } else if (operator === '-') {
             if (typeof actualValue === 'number') {
                 return -actualValue;
             } else {
-                throw new AstNodeError(expression, `Cannot apply operator '${operator}' to values of type '${typeof actualValue}'`);
+                throw new AstNodeError(expression, `Cannot apply operator '${operator}' to value of type '${typeof actualValue}'`);
             }
         } else if (operator === '!') {
             if (typeof actualValue === 'boolean') {
                 return !actualValue;
             } else {
-                throw new AstNodeError(expression, `Cannot apply operator '${operator}' to values of type '${typeof actualValue}'`);
+                throw new AstNodeError(expression, `Cannot apply operator '${operator}' to value of type '${typeof actualValue}'`);
             }
         }
     } else if (isNumberExpression(expression)) {

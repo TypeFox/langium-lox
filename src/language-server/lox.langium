@@ -42,7 +42,10 @@ VariableDeclaration returns NamedElement:
 ;
 
 Expression:
-    Addition;
+    Assignment;
+
+Assignment infers Expression:
+    Addition ({infer BinaryExpression.left=current} operator=('=') right=Addition)*;
 
 Addition infers Expression:
     Multiplication ({infer BinaryExpression.left=current} operator=('+' | '-') right=Multiplication)*;
@@ -54,10 +57,7 @@ Logical infers Expression:
     Comparison ({infer BinaryExpression.left=current} operator=('and' | 'or') right=Comparison)*;
 
 Comparison infers Expression:
-    Assignment ({infer BinaryExpression.left=current} operator=('<' | '<=' | '>' | '>=' | '==' | '!=') right=Assignment)*;
-
-Assignment infers Expression:
-    MemberCall ({infer BinaryExpression.left=current} operator=('=') right=MemberCall)*;
+    MemberCall ({infer BinaryExpression.left=current} operator=('<' | '<=' | '>' | '>=' | '==' | '!=') right=MemberCall)*;
 
 MemberCall infers Expression:
     Primary
