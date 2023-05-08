@@ -3,7 +3,7 @@ grammar Lox
 entry LoxProgram:
     elements+=LoxElement*;
 
-LoxElement: 
+LoxElement:
     Class |
     ExpressionBlock | 
     IfStatement |
@@ -16,7 +16,7 @@ LoxElement:
     Expression ';'
 ;
 
-IfStatement: 
+IfStatement:
     'if' '(' condition=Expression ')' block=ExpressionBlock
     ('else' elseBlock=ExpressionBlock)?
 ;
@@ -29,13 +29,14 @@ ForStatement:
     'for' '(' counter=VariableDeclaration? ';' condition=Expression? ';' execution=Expression? ')' block=ExpressionBlock
 ;
 
-PrintStatement: 'print' value=Expression;
+PrintStatement:
+    'print' value=Expression;
 
-ReturnStatement: 'return' value=Expression?;
+ReturnStatement:
+    'return' value=Expression?;
 
-ExpressionBlock: '{'
-    elements+=LoxElement*
-'}';
+ExpressionBlock:
+    '{' elements+=LoxElement* '}';
 
 VariableDeclaration returns NamedElement:
     {infer VariableDeclaration} 'var' name=ID (':' type=TypeReference)? (assignment?='=' value=Expression)?
@@ -61,22 +62,13 @@ Comparison infers Expression:
 
 MemberCall infers Expression:
     Primary
-	({infer MemberCall.previous=current} 
-        // Member call with function call
-        ("." element=[NamedElement:ID] (
-		explicitOperationCall?='('
-		(
-		    arguments+=Expression (',' arguments+=Expression)*
-		)?
-		')')? 
-        // Chained function call
-        | (
-		explicitOperationCall?='('
-		(
-		    arguments+=Expression (',' arguments+=Expression)*
-		)?
-		')'))
+    // Member call with function call
+    ({infer MemberCall.previous=current} 
+        "." element=[NamedElement:ID] ( FunctionCallArguments )? 
+    // Chained function call
+        | ( FunctionCallArguments )
     )*;
+
 
 Primary infers Expression:
     '(' Expression ')' |
@@ -88,46 +80,57 @@ Primary infers Expression:
     FeatureCall;
 
 FeatureCall infers Expression:
-	{infer MemberCall}
-	(element=[NamedElement:ID] | element=[NamedElement:'this'] | element=[NamedElement:'super'])
+    {infer MemberCall}
+    ( element=[NamedElement:ID] | element=[NamedElement:'this'] | element=[NamedElement:'super'] )
     // Optional function call after referencing an element
-    (explicitOperationCall?='('
-	(
-	    arguments+=Expression (',' arguments+=Expression)*
-	)?
-	')')?;
+    ( FunctionCallArguments )?;
+
+fragment FunctionCallArguments:
+    explicitOperationCall?='(' ( arguments+=Expression (',' arguments+=Expression)* )? ')';
 
 UnaryExpression:
-   operator=('!' | '-' | '+') value=Expression
+    operator=('!' | '-' | '+') value=Expression
 ;
 
-NumberExpression: value=NUMBER;
-StringExpression: value=STRING;
-BooleanExpression: value?='true' | 'false';
-NilExpression: value='nil';
+NumberExpression:
+    value=NUMBER;
+StringExpression:
+    value=STRING;
+BooleanExpression:
+    value?='true' | 'false';
+NilExpression:
+    value='nil';
 
 FunctionDeclaration:
-    'fun' name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' ':' returnType=TypeReference body=ExpressionBlock;
+    'fun' name=ID ( ParameterList ) ':' returnType=TypeReference body=ExpressionBlock;
 
-Parameter: name=ID ':' type=TypeReference;
+fragment ParameterList:
+    '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')';
 
-Class: 'class' name=ID ('<' superClass=[Class:ID])? '{'
+Parameter:
+    name=ID ':' type=TypeReference;
+
+Class:
+    'class' name=ID ('<' superClass=[Class:ID])? '{'
     members+=ClassMember*
 '}';
 
-ClassMember: MethodMember | FieldMember;
+ClassMember:
+    MethodMember | FieldMember;
 
 MethodMember:
-    name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' ':' returnType=TypeReference body=ExpressionBlock;
+    name=ID ( ParameterList ) ':' returnType=TypeReference body=ExpressionBlock;
 
 FieldMember:
     name=ID ':' type=TypeReference;
 
-TypeReference: reference=[Class:ID] 
+TypeReference:
+    reference=[Class:ID] 
     | primitive=("string" | "number" | "boolean" | "void") 
     | '(' ( parameters+=LambdaParameter (',' parameters+=LambdaParameter)*)? ')' '=>' returnType=TypeReference;
 
-LambdaParameter: (name=ID ':')? type=TypeReference;
+LambdaParameter:
+    (name=ID ':')? type=TypeReference;
 
 type NamedElement = Parameter | FunctionDeclaration | VariableDeclaration | MethodMember | FieldMember | Class;
 
