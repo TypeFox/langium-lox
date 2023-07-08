@@ -3,7 +3,7 @@ import { BinaryExpression, Expression, isBinaryExpression, isBooleanExpression, 
 import { createLoxServices } from "../language-server/lox-module";
 import { v4 } from 'uuid';
 import { URI } from "vscode-uri";
-import { CancellationToken } from "vscode-languageclient";
+import { CancellationToken } from "vscode-languageserver/browser";
 
 export interface InterpreterContext {
     log: (value: unknown) => MaybePromise<void>
@@ -88,7 +88,7 @@ async function buildDocument(program: string): Promise<BuildResult> {
     }
 }
 
-async function runProgram(program: LoxProgram, outerContext: InterpreterContext): Promise<void> {
+export async function runProgram(program: LoxProgram, outerContext: InterpreterContext): Promise<void> {
     const context: RunnerContext = {
         variables: new Variables(),
         log: outerContext.log
