@@ -30,21 +30,23 @@ shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.Validated, async doc
     for (const document of documents) {
         if (document.diagnostics === undefined || document.diagnostics.filter((i) => i.severity === 1).length === 0) {
             sendMessage(document, "notification", "startInterpreter")
+            const timeoutId = setTimeout(() => {
+                sendMessage(document, "error", "Interpreter timed out");
+              }, 1000 * 60); // 1 minute
+
             await Promise.race([
                 runInterpreter(document.textDocument.getText(), {
                     log: (message) => {
                         sendMessage(document, "output", message);
                     }
                 }).catch((e) => {
+                    clearTimeout(timeoutId);
                     sendMessage(document, "error", e.message);
                 }).then(() => {
+                    clearTimeout(timeoutId);
                     sendMessage(document, "notification", "endInterpreter");
                 }),
-                new Promise((resolve, reject) => {
-                    setTimeout(() => {
-                        resolve(sendMessage(document, "error", "Interpreter timed out"));
-                    }, 1000 * 60); // 1 minute
-                })
+                new Promise((resolve) => resolve(timeoutId) )
             ]);
         }
         else {
