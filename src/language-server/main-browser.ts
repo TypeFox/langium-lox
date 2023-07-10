@@ -26,15 +26,24 @@ startLanguageServer(shared);
 // Send a notification with the serialized AST after every document change
 type DocumentChange = { uri: string, content: string, diagnostics: Diagnostic[] };
 const documentChangeNotification = new NotificationType<DocumentChange>('browser/DocumentChange');
-shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.Validated, documents => {
+shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.Validated, async documents => {
     for (const document of documents) {
         if (document.diagnostics === undefined || document.diagnostics.filter((i) => i.severity === 1).length === 0) {
             sendMessage(document, "notification", "startInterpreter")
-            runInterpreter(document.textDocument.getText(), {
-                log: (message) => {
-                    sendMessage(document, "output", message)
-                }
-            })
+            await Promise.race([
+                runInterpreter(document.textDocument.getText(), {
+                    log: (message) => {
+                        sendMessage(document, "output", message);
+                    }
+                }).catch((e) => {
+                    sendMessage(document, "error", e.message);
+                }),
+                new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        sendMessage(document, "error", "Interpreter timed out");
+                    }, 100); // 1 minute
+                })
+            ]);
         }
         else {
             sendMessage(document, "error", document.diagnostics)

@@ -3,7 +3,7 @@ import { BinaryExpression, Expression, isBinaryExpression, isBooleanExpression, 
 import { createLoxServices } from "../language-server/lox-module";
 import { v4 } from 'uuid';
 import { URI } from "vscode-uri";
-import { CancellationToken } from "vscode-languageserver/browser";
+import { CancellationToken } from "vscode-languageserver";
 
 export interface InterpreterContext {
     log: (value: unknown) => MaybePromise<void>

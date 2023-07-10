@@ -49,7 +49,7 @@
         "build": "tsc -b tsconfig.json",
         "watch": "tsc -b tsconfig.json --watch",
         "lint": "eslint src --ext ts",
-        "clean": "rimraf out && rimraf node_modules",
+        "clean": "shx rm -rf out node_modules",
         "langium:generate": "langium generate",
         "langium:watch": "langium generate --watch"
     },
