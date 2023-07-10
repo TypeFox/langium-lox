@@ -37,10 +37,12 @@ shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.Validated, async doc
                     }
                 }).catch((e) => {
                     sendMessage(document, "error", e.message);
+                }).then(() => {
+                    sendMessage(document, "notification", "endInterpreter");
                 }),
                 new Promise((resolve, reject) => {
                     setTimeout(() => {
-                        sendMessage(document, "error", "Interpreter timed out");
+                        resolve(sendMessage(document, "error", "Interpreter timed out"));
                     }, 1000 * 60); // 1 minute
                 })
             ]);
