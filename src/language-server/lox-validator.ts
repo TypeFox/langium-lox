@@ -1,5 +1,5 @@
 import { AstNode, streamAllContents, ValidationAcceptor, ValidationChecks, ValidationRegistry } from 'langium';
-import { BinaryExpression, ExpressionBlock, FunctionDeclaration, isReturnStatement, LoxAstType, MethodMember, TypeReference, UnaryExpression, VariableDeclaration } from './generated/ast';
+import { BinaryExpression, Class, ExpressionBlock, FunctionDeclaration, isReturnStatement, LoxAstType, MethodMember, TypeReference, UnaryExpression, VariableDeclaration } from './generated/ast';
 import type { LoxServices } from './lox-module';
 import { isAssignable } from './type-system/assignment';
 import { isVoidType, TypeDescription, typeToString } from './type-system/descriptions';
@@ -18,6 +18,7 @@ export class LoxValidationRegistry extends ValidationRegistry {
             UnaryExpression: validator.checkUnaryOperationAllowed,
             VariableDeclaration: validator.checkVariableDeclaration,
             MethodMember: validator.checkMethodReturnType,
+            Class: validator.checkClassDeclaration,
             FunctionDeclaration: validator.checkFunctionReturnType
         };
         this.register(checks, validator);
@@ -35,6 +36,13 @@ export class LoxValidator {
 
     checkMethodReturnType(method: MethodMember, accept: ValidationAcceptor): void {
         this.checkFunctionReturnTypeInternal(method.body, method.returnType, accept);
+    }
+
+    // TODO: implement classes 
+    checkClassDeclaration(declaration: Class, accept: ValidationAcceptor): void {
+        accept('error', 'Classes are currently unsupported.', {
+            node: declaration
+        });
     }
 
     private checkFunctionReturnTypeInternal(body: ExpressionBlock, returnType: TypeReference, accept: ValidationAcceptor): void {
