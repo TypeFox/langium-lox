@@ -255,7 +255,7 @@ async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Pr
     } else if (isVariableDeclaration(ref) || isParameter(ref)) {
         value = context.variables.get(memberCall, ref.name);
     } else if (isClass(ref)) {
-        throw new AstNodeError(memberCall, 'Classes are current unsupported');
+        throw new AstNodeError(memberCall, 'Classes are currently unsupported');
     } else {
         value = previous;
     }

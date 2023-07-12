@@ -29,10 +29,11 @@ const documentChangeNotification = new NotificationType<DocumentChange>('browser
 shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.Validated, async documents => {
     for (const document of documents) {
         if (document.diagnostics === undefined || document.diagnostics.filter((i) => i.severity === 1).length === 0) {
+
             sendMessage(document, "notification", "startInterpreter")
             const timeoutId = setTimeout(() => {
-                sendMessage(document, "error", "Interpreter timed out");
-              }, 1000 * 60); // 1 minute
+               sendMessage(document, "error", "Interpreter timed out");
+            }, 1000 * 60); // 1 minute
 
             await Promise.race([
                 runInterpreter(document.textDocument.getText(), {
@@ -40,13 +41,14 @@ shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.Validated, async doc
                         sendMessage(document, "output", message);
                     }
                 }).catch((e) => {
-                    clearTimeout(timeoutId);
+                    console.error(e);
                     sendMessage(document, "error", e.message);
                 }).then(() => {
-                    clearTimeout(timeoutId);
                     sendMessage(document, "notification", "endInterpreter");
+                }).finally(() => {
+                    clearTimeout(timeoutId);
                 }),
-                new Promise((resolve) => resolve(timeoutId) )
+                new Promise(() => timeoutId)
             ]);
         }
         else {
