@@ -99,6 +99,9 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
         if (!isClass(statement) && !isFunctionDeclaration(statement)) {
             await runLoxElement(statement, context, () => { end = true });
         }
+        else if(isClass(statement)){
+            throw new AstNodeError(statement, 'Classes are currently unsupported');
+        }
         if (end) {
             break;
         }
