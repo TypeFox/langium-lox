@@ -41,7 +41,8 @@ export class LoxValidator {
     // TODO: implement classes 
     checkClassDeclaration(declaration: Class, accept: ValidationAcceptor): void {
         accept('error', 'Classes are currently unsupported.', {
-            node: declaration
+            node: declaration,
+            property: 'name'
         });
     }
 
