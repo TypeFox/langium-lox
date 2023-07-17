@@ -1,23 +1,25 @@
-import { AstNode, EmptyFileSystem, interruptAndCheck, LangiumDocument, MaybePromise } from "langium";
+import { AstNode, EmptyFileSystem, interruptAndCheck, LangiumDocument, MaybePromise, OperationCancelled } from "langium";
 import { BinaryExpression, Expression, isBinaryExpression, isBooleanExpression, isClass, isExpression, isExpressionBlock, isForStatement, isFunctionDeclaration, isIfStatement, isMemberCall, isNilExpression, isNumberExpression, isParameter, isPrintStatement, isReturnStatement, isStringExpression, isUnaryExpression, isVariableDeclaration, isWhileStatement, LoxElement, LoxProgram, MemberCall } from "../language-server/generated/ast";
 import { createLoxServices } from "../language-server/lox-module";
 import { v4 } from 'uuid';
 import { URI } from "vscode-uri";
-import { CancellationToken } from "vscode-languageserver";
+import { CancellationToken, CancellationTokenSource } from "vscode-languageserver";
 
 export interface InterpreterContext {
     log: (value: unknown) => MaybePromise<void>,
-    onCancel?: () => void,
+    onTimeout?: () => void,
     onStart?: () => void,
 }
 
 const services = createLoxServices(EmptyFileSystem);
 
-export async function runInterpreter(program: string, context: InterpreterContext, cancellationToken?: CancellationToken): Promise<void> {
+
+export async function runInterpreter(program: string, context: InterpreterContext): Promise<void> {
     const buildResult = await buildDocument(program);
+    
     try {
         const loxProgram = buildResult.document.parseResult.value as LoxProgram;
-        await runProgram(loxProgram, context, cancellationToken);
+        await runProgram(loxProgram, context);
     } finally {
         await buildResult.dispose();
     }
@@ -27,9 +29,10 @@ type ReturnFunction = (value: unknown) => void;
 
 interface RunnerContext {
     variables: Variables,
-    cancellationToken?: CancellationToken,
+    cancellationToken: CancellationToken,
+    timeout: NodeJS.Timeout,
     log: (value: unknown) => MaybePromise<void>,
-    onCancel?: () => void,
+    onTimeout?: () => void,
     onStart?: () => void,
 }
 
@@ -93,30 +96,39 @@ async function buildDocument(program: string): Promise<BuildResult> {
     }
 }
 
-export async function runProgram(program: LoxProgram, outerContext: InterpreterContext, cancellationToken?: CancellationToken): Promise<void> {
+export async function runProgram(program: LoxProgram, outerContext: InterpreterContext): Promise<void> {
+    const cancellationTokenSource = new CancellationTokenSource();
+    const cancellationToken = cancellationTokenSource.token;
+    
+    const timeout = setTimeout(() => {
+        cancellationTokenSource.cancel();
+        console.log('Timeout');
+    }, 500);
+
     const context: RunnerContext = {
         variables: new Variables(),
         cancellationToken,
+        timeout,
         log: outerContext.log,
-        onCancel: outerContext.onCancel,
-        onStart: outerContext.onStart
+        onTimeout: outerContext.onTimeout,
+        onStart: outerContext.onStart,
     };
     context.variables.enter();
     let end = false;
-    if(context.onStart){
+    if (context.onStart) {
         context.onStart();
     }
+
     for (const statement of program.elements) {
-        if(cancellationToken && cancellationToken.isCancellationRequested){
-            if(context.onCancel){
-                context.onCancel();
-            }
+        if (await checkCancellationToken(context)) {
+            end = true;
             break;
         }
+
         if (!isClass(statement) && !isFunctionDeclaration(statement)) {
             await runLoxElement(statement, context, () => { end = true });
         }
-        else if(isClass(statement)){
+        else if (isClass(statement)) {
             throw new AstNodeError(statement, 'Classes are currently unsupported');
         }
         if (end) {
@@ -127,12 +139,10 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
 }
 
 async function runLoxElement(element: LoxElement, context: RunnerContext, returnFn: ReturnFunction): Promise<void> {
-    if(context.cancellationToken && context.cancellationToken.isCancellationRequested) {
-        if(context.onCancel){
-            context.onCancel();
-        }
+    if (await checkCancellationToken(context)) {
         return;
     }
+
     if (isExpressionBlock(element)) {
         await interruptAndCheck(CancellationToken.None);
         context.variables.enter();
@@ -190,12 +200,10 @@ async function runLoxElement(element: LoxElement, context: RunnerContext, return
 }
 
 async function runExpression(expression: Expression, context: RunnerContext): Promise<unknown> {
-    if(context.cancellationToken && context.cancellationToken.isCancellationRequested) {
-        if(context.onCancel){
-            context.onCancel();
-        }
+    if (await checkCancellationToken(context)) {
         return;
     }
+
     if (isBinaryExpression(expression)) {
         const { left, right, operator } = expression;
         const rightValue = await runExpression(right, context);
@@ -276,12 +284,10 @@ async function setExpressionValue(left: Expression, right: unknown, context: Run
 }
 
 async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Promise<unknown> {
-    if(context.cancellationToken && context.cancellationToken.isCancellationRequested) {
-        if(context.onCancel){
-            context.onCancel();
-        }
+    if (await checkCancellationToken(context)) {
         return;
     }
+
     let previous: unknown = undefined;
     if (memberCall.previous) {
         previous = await runExpression(memberCall.previous, context);
@@ -353,6 +359,21 @@ function applyOperator(node: BinaryExpression, operator: string, left: unknown, 
     } else {
         throw new AstNodeError(node, `Operator ${operator} is unknown`);
     }
+}
+
+async function checkCancellationToken(context: RunnerContext): Promise<boolean> {
+    try {
+        await interruptAndCheck(context.cancellationToken);
+    }
+    catch (e) {
+        if (e === OperationCancelled) {
+            if (context.onTimeout) {
+                context.onTimeout();
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 function isNumber(value: unknown): value is number {

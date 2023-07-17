@@ -5,7 +5,7 @@
  ******************************************************************************/
 
 import { startLanguageServer, EmptyFileSystem, DocumentState, LangiumDocument } from 'langium';
-import { BrowserMessageReader, BrowserMessageWriter, Diagnostic, NotificationType, createConnection, CancellationTokenSource } from 'vscode-languageserver/browser';
+import { BrowserMessageReader, BrowserMessageWriter, Diagnostic, NotificationType, createConnection } from 'vscode-languageserver/browser';
 import { runInterpreter } from '../interpreter/runner';
 import { createLoxServices } from './lox-module';
 
@@ -31,29 +31,21 @@ const documentChangeNotification = new NotificationType<DocumentChange>('browser
 shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.Validated, async documents => {
     for (const document of documents) {
         if (document.diagnostics === undefined || document.diagnostics.filter((i) => i.severity === 1).length === 0) {
-            const cancellationTokenSource = new CancellationTokenSource();
-            const cancellationToken = cancellationTokenSource.token;
-
-
             let timeout: NodeJS.Timeout;
-            
+
             runInterpreter(document.textDocument.getText(), {
                 log: (message) => {
                     sendMessage(document, "output", message);
                 },
-                onCancel: () => {
-                    console.log("Interpreter cancelled");
+                onTimeout: () => {
+                    console.log("Interpreter timeout");
                 },
                 onStart: () => {
                     console.log("Interpreter started");
                     sendMessage(document, "notification", "startInterpreter")
-                    cancellationTokenSource.cancel();
-                    setTimeout(() => {
-                        console.log("Interpreter timed out");
-                        sendMessage(document, "error", "Interpreter timed out");
-                    }, 100);
+                  
                 }
-            }, cancellationToken).then(() => {
+            },).then(() => {
                 sendMessage(document, "notification", "endInterpreter");
             })
             .catch((e) => {
