@@ -6,16 +6,18 @@ import { URI } from "vscode-uri";
 import { CancellationToken } from "vscode-languageserver";
 
 export interface InterpreterContext {
-    log: (value: unknown) => MaybePromise<void>
+    log: (value: unknown) => MaybePromise<void>,
+    onCancel?: () => void,
+    onStart?: () => void,
 }
 
 const services = createLoxServices(EmptyFileSystem);
 
-export async function runInterpreter(program: string, context: InterpreterContext): Promise<void> {
+export async function runInterpreter(program: string, context: InterpreterContext, cancellationToken?: CancellationToken): Promise<void> {
     const buildResult = await buildDocument(program);
     try {
         const loxProgram = buildResult.document.parseResult.value as LoxProgram;
-        await runProgram(loxProgram, context);
+        await runProgram(loxProgram, context, cancellationToken);
     } finally {
         await buildResult.dispose();
     }
@@ -25,7 +27,10 @@ type ReturnFunction = (value: unknown) => void;
 
 interface RunnerContext {
     variables: Variables,
-    log: (value: unknown) => MaybePromise<void>
+    cancellationToken?: CancellationToken,
+    log: (value: unknown) => MaybePromise<void>,
+    onCancel?: () => void,
+    onStart?: () => void,
 }
 
 class Variables {
@@ -88,14 +93,26 @@ async function buildDocument(program: string): Promise<BuildResult> {
     }
 }
 
-export async function runProgram(program: LoxProgram, outerContext: InterpreterContext): Promise<void> {
+export async function runProgram(program: LoxProgram, outerContext: InterpreterContext, cancellationToken?: CancellationToken): Promise<void> {
     const context: RunnerContext = {
         variables: new Variables(),
-        log: outerContext.log
+        cancellationToken,
+        log: outerContext.log,
+        onCancel: outerContext.onCancel,
+        onStart: outerContext.onStart
     };
     context.variables.enter();
     let end = false;
+    if(context.onStart){
+        context.onStart();
+    }
     for (const statement of program.elements) {
+        if(cancellationToken && cancellationToken.isCancellationRequested){
+            if(context.onCancel){
+                context.onCancel();
+            }
+            break;
+        }
         if (!isClass(statement) && !isFunctionDeclaration(statement)) {
             await runLoxElement(statement, context, () => { end = true });
         }
@@ -110,6 +127,12 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
 }
 
 async function runLoxElement(element: LoxElement, context: RunnerContext, returnFn: ReturnFunction): Promise<void> {
+    if(context.cancellationToken && context.cancellationToken.isCancellationRequested) {
+        if(context.onCancel){
+            context.onCancel();
+        }
+        return;
+    }
     if (isExpressionBlock(element)) {
         await interruptAndCheck(CancellationToken.None);
         context.variables.enter();
@@ -167,6 +190,12 @@ async function runLoxElement(element: LoxElement, context: RunnerContext, return
 }
 
 async function runExpression(expression: Expression, context: RunnerContext): Promise<unknown> {
+    if(context.cancellationToken && context.cancellationToken.isCancellationRequested) {
+        if(context.onCancel){
+            context.onCancel();
+        }
+        return;
+    }
     if (isBinaryExpression(expression)) {
         const { left, right, operator } = expression;
         const rightValue = await runExpression(right, context);
@@ -247,6 +276,12 @@ async function setExpressionValue(left: Expression, right: unknown, context: Run
 }
 
 async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Promise<unknown> {
+    if(context.cancellationToken && context.cancellationToken.isCancellationRequested) {
+        if(context.onCancel){
+            context.onCancel();
+        }
+        return;
+    }
     let previous: unknown = undefined;
     if (memberCall.previous) {
         previous = await runExpression(memberCall.previous, context);
