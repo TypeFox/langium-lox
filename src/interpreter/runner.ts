@@ -101,8 +101,9 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
     const cancellationToken = cancellationTokenSource.token;
     
     const timeout = setTimeout(() => {
-        cancellationTokenSource.cancel();
         console.log('Timeout');
+        cancellationTokenSource.cancel();
+        cancellationTokenSource.dispose();
     }, 500);
 
     const context: RunnerContext = {
@@ -372,6 +373,7 @@ async function checkCancellationToken(context: RunnerContext): Promise<boolean> 
             }
             return true;
         }
+        throw e;
     }
     return false;
 }
