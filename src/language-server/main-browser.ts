@@ -4,7 +4,7 @@
  * terms of the MIT License, which is available in the project root.
  ******************************************************************************/
 
-import { startLanguageServer, EmptyFileSystem, DocumentState, LangiumDocument } from 'langium';
+import { startLanguageServer, EmptyFileSystem, DocumentState, LangiumDocument, OperationCancelled } from 'langium';
 import { BrowserMessageReader, BrowserMessageWriter, Diagnostic, NotificationType, createConnection } from 'vscode-languageserver/browser';
 import { runInterpreter } from '../interpreter/runner';
 import { createLoxServices } from './lox-module';
@@ -31,26 +31,23 @@ const documentChangeNotification = new NotificationType<DocumentChange>('browser
 shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.Validated, async documents => {
     for (const document of documents) {
         if (document.diagnostics === undefined || document.diagnostics.filter((i) => i.severity === 1).length === 0) {
-            let timeout: NodeJS.Timeout;
-
             runInterpreter(document.textDocument.getText(), {
                 log: (message) => {
                     sendMessage(document, "output", message);
                 },
-                onTimeout: () => {
-                    sendMessage(document, "error", "Interpreter timed out");
-                },
                 onStart: () => {
                     sendMessage(document, "notification", "startInterpreter")
-                  
                 }
-            },).then(() => {
-                sendMessage(document, "notification", "endInterpreter");
             })
             .catch((e) => {
+                if(e === OperationCancelled) {
+                    sendMessage(document, "error", "Interpreter timed out");
+                    return;
+                }
                 sendMessage(document, "error", e.message);
-            }).finally(() => {
-                clearTimeout(timeout);
+            })
+            .finally(() => {
+                sendMessage(document, "notification", "endInterpreter");
             });
         }
         else {

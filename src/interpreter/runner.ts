@@ -1,4 +1,4 @@
-import { AstNode, EmptyFileSystem, interruptAndCheck, LangiumDocument, MaybePromise, OperationCancelled } from "langium";
+import { AstNode, EmptyFileSystem, interruptAndCheck, LangiumDocument, MaybePromise } from "langium";
 import { BinaryExpression, Expression, isBinaryExpression, isBooleanExpression, isClass, isExpression, isExpressionBlock, isForStatement, isFunctionDeclaration, isIfStatement, isMemberCall, isNilExpression, isNumberExpression, isParameter, isPrintStatement, isReturnStatement, isStringExpression, isUnaryExpression, isVariableDeclaration, isWhileStatement, LoxElement, LoxProgram, MemberCall } from "../language-server/generated/ast";
 import { createLoxServices } from "../language-server/lox-module";
 import { v4 } from 'uuid';
@@ -7,7 +7,6 @@ import { CancellationToken, CancellationTokenSource } from "vscode-languageserve
 
 export interface InterpreterContext {
     log: (value: unknown) => MaybePromise<void>,
-    onTimeout?: () => void,
     onStart?: () => void,
 }
 
@@ -33,7 +32,6 @@ interface RunnerContext {
     cancellationToken: CancellationToken,
     timeout: NodeJS.Timeout,
     log: (value: unknown) => MaybePromise<void>,
-    onTimeout?: () => void,
     onStart?: () => void,
 }
 
@@ -102,6 +100,7 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
     const cancellationToken = cancellationTokenSource.token;
     
     const timeout = setTimeout(async () => {
+        console.log('Interpreter timeout');
         cancellationTokenSource.cancel();  
     }, TIMEOUT_MS);
     
@@ -110,7 +109,6 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
         cancellationToken,
         timeout,
         log: outerContext.log,
-        onTimeout: outerContext.onTimeout,
         onStart: outerContext.onStart,
     };
 
@@ -122,10 +120,7 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
     }
 
     for (const statement of program.elements) {
-        if (await checkCancellationToken(context)) {
-            end = true;
-            break;
-        }
+        await interruptAndCheck(context.cancellationToken);
 
         if (!isClass(statement) && !isFunctionDeclaration(statement)) {
             await runLoxElement(statement, context, () => { end = true });
@@ -141,9 +136,7 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
 }
 
 async function runLoxElement(element: LoxElement, context: RunnerContext, returnFn: ReturnFunction): Promise<void> {
-    if (await checkCancellationToken(context)) {
-        return;
-    }
+    await interruptAndCheck(context.cancellationToken);
 
     if (isExpressionBlock(element)) {
         await interruptAndCheck(CancellationToken.None);
@@ -202,9 +195,8 @@ async function runLoxElement(element: LoxElement, context: RunnerContext, return
 }
 
 async function runExpression(expression: Expression, context: RunnerContext): Promise<unknown> {
-    if (await checkCancellationToken(context)) {
-        return;
-    }
+    await interruptAndCheck(context.cancellationToken);
+
 
     if (isBinaryExpression(expression)) {
         const { left, right, operator } = expression;
@@ -286,9 +278,7 @@ async function setExpressionValue(left: Expression, right: unknown, context: Run
 }
 
 async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Promise<unknown> {
-    if (await checkCancellationToken(context)) {
-        return;
-    }
+    await interruptAndCheck(context.cancellationToken);
 
     let previous: unknown = undefined;
     if (memberCall.previous) {
@@ -363,21 +353,6 @@ function applyOperator(node: BinaryExpression, operator: string, left: unknown, 
     }
 }
 
-async function checkCancellationToken(context: RunnerContext): Promise<boolean> {
-    try {
-        await interruptAndCheck(context.cancellationToken);
-    }
-    catch (e) {
-        if (e === OperationCancelled) {
-            if (context.onTimeout) {
-                context.onTimeout();
-            }
-            return true;
-        }
-        throw e;
-    }
-    return false;
-}
 
 function isNumber(value: unknown): value is number {
     return typeof value === 'number';
