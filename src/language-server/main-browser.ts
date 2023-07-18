@@ -38,10 +38,9 @@ shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.Validated, async doc
                     sendMessage(document, "output", message);
                 },
                 onTimeout: () => {
-                    console.log("onTimeout");
+                    sendMessage(document, "error", "Interpreter timed out");
                 },
                 onStart: () => {
-                    console.log("Interpreter started");
                     sendMessage(document, "notification", "startInterpreter")
                   
                 }

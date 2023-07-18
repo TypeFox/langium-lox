@@ -14,7 +14,7 @@ export interface InterpreterContext {
 const services = createLoxServices(EmptyFileSystem);
 
 // after 5 seconds, the interpreter will be interrupted and call onTimeout
-const TIMEOUT_MS = 1000 * 5; // 5 seconds
+const TIMEOUT_MS = 1000 * 5;
 
 export async function runInterpreter(program: string, context: InterpreterContext): Promise<void> {
     const buildResult = await buildDocument(program);
@@ -113,6 +113,7 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
         onTimeout: outerContext.onTimeout,
         onStart: outerContext.onStart,
     };
+
     let end = false;
     
     context.variables.enter();
