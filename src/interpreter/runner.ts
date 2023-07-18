@@ -12,7 +12,9 @@ export interface InterpreterContext {
 }
 
 const services = createLoxServices(EmptyFileSystem);
-// const TIMEOUT_MS = 1000 * 5; // 5 seconds
+
+// after 5 seconds, the interpreter will be interrupted and call onTimeout
+const TIMEOUT_MS = 1000 * 5; // 5 seconds
 
 export async function runInterpreter(program: string, context: InterpreterContext): Promise<void> {
     const buildResult = await buildDocument(program);
@@ -98,14 +100,11 @@ async function buildDocument(program: string): Promise<BuildResult> {
 export async function runProgram(program: LoxProgram, outerContext: InterpreterContext): Promise<void> {
     const cancellationTokenSource = new CancellationTokenSource();
     const cancellationToken = cancellationTokenSource.token;
-    let end = false;
     
     const timeout = setTimeout(async () => {
-        console.log('Timeout');
-        cancellationTokenSource.cancel();
-
-    }, 500);
-
+        cancellationTokenSource.cancel();  
+    }, TIMEOUT_MS);
+    
     const context: RunnerContext = {
         variables: new Variables(),
         cancellationToken,
@@ -114,7 +113,8 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
         onTimeout: outerContext.onTimeout,
         onStart: outerContext.onStart,
     };
-
+    let end = false;
+    
     context.variables.enter();
     if (context.onStart) {
         context.onStart();
