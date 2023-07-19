@@ -100,7 +100,6 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
     const cancellationToken = cancellationTokenSource.token;
     
     const timeout = setTimeout(async () => {
-        console.log('Interpreter timeout');
         cancellationTokenSource.cancel();  
     }, TIMEOUT_MS);
     
