@@ -31,24 +31,25 @@ const documentChangeNotification = new NotificationType<DocumentChange>('browser
 shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.Validated, async documents => {
     for (const document of documents) {
         if (document.diagnostics === undefined || document.diagnostics.filter((i) => i.severity === 1).length === 0) {
-            runInterpreter(document.textDocument.getText(), {
-                log: (message) => {
-                    sendMessage(document, "output", message);
-                },
-                onStart: () => {
-                    sendMessage(document, "notification", "startInterpreter")
-                }
-            })
-            .catch((e) => {
-                if(e === OperationCancelled) {
+            try {
+                await runInterpreter(document.textDocument.getText(), {
+                    log: (message) => {
+                        sendMessage(document, "output", message);
+                    },
+                    onStart: () => {
+                        sendMessage(document, "notification", "startInterpreter");
+                    },
+                });
+            } catch (e: any) {
+                if (e === OperationCancelled) {
                     sendMessage(document, "error", "Interpreter timed out");
-                    return;
+                } else {
+                    sendMessage(document, "error", e.message);
                 }
-                sendMessage(document, "error", e.message);
-            })
-            .finally(() => {
+            } finally {
                 sendMessage(document, "notification", "endInterpreter");
-            });
+            }
+
         }
         else {
             sendMessage(document, "error", document.diagnostics)
