@@ -261,10 +261,11 @@ async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Pr
     }
 
     if (memberCall.explicitOperationCall) {
-        if (isFunctionDeclaration(ref)) {
+        const targetFunction = isFunctionDeclaration(ref) ? ref : (isFunctionDeclaration(value) ? value : undefined);
+        if (targetFunction) {
             const args = await Promise.all(memberCall.arguments.map(e => runExpression(e, context)));
             context.variables.enter();
-            const names = ref.parameters.map(e => e.name);
+            const names = targetFunction.parameters.map(e => e.name);
             for (let i = 0; i < args.length; i++) {
                 context.variables.push(names[i], args[i]);
             }
@@ -272,15 +273,14 @@ async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Pr
             const returnFn: ReturnFunction = (returnValue) => {
                 functionValue = returnValue;
             }
-            await runLoxElement(ref.body, context, returnFn);
+            await runLoxElement(targetFunction.body, context, returnFn);
             context.variables.leave();
-            return functionValue;
+            return functionValue;             
         } else {
             throw new AstNodeError(memberCall, 'Cannot call a non-function');
         }
     }
-    return value;
-}
+    return value;}
 
 function applyOperator(node: BinaryExpression, operator: string, left: unknown, right: unknown, check?: (value: unknown) => boolean): unknown {
     if (check && (!check(left) || !check(right))) {
