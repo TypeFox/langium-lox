@@ -3,7 +3,7 @@ import { BinaryExpression, Expression, isBinaryExpression, isBooleanExpression, 
 import { createLoxServices } from "../language-server/lox-module";
 import { v4 } from 'uuid';
 import { URI } from "vscode-uri";
-import { CancellationToken } from "vscode-languageclient";
+import { CancellationToken } from 'vscode-jsonrpc';
 
 export interface InterpreterContext {
     log: (value: unknown) => MaybePromise<void>
@@ -261,10 +261,10 @@ async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Pr
     }
 
     if (memberCall.explicitOperationCall) {
-        if (isFunctionDeclaration(ref)) {
+        if (isFunctionDeclaration(value)) {
             const args = await Promise.all(memberCall.arguments.map(e => runExpression(e, context)));
             context.variables.enter();
-            const names = ref.parameters.map(e => e.name);
+            const names = value.parameters.map(e => e.name);
             for (let i = 0; i < args.length; i++) {
                 context.variables.push(names[i], args[i]);
             }
@@ -272,7 +272,7 @@ async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Pr
             const returnFn: ReturnFunction = (returnValue) => {
                 functionValue = returnValue;
             }
-            await runLoxElement(ref.body, context, returnFn);
+            await runLoxElement(value.body, context, returnFn);
             context.variables.leave();
             return functionValue;
         } else {
