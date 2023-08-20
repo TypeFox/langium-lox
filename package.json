@@ -11,24 +11,24 @@
     ],
     "contributes": {
         "languages": [{
-                "id": "lox",
+            "id": "lox",
             "aliases": ["Lox", "lox"],
             "extensions": [".lox"],
-                "configuration": "./language-configuration.json"
+            "configuration": "./language-configuration.json"
         }],
         "grammars": [{
-                "language": "lox",
-                "scopeName": "source.lox",
-                "path": "./syntaxes/lox.tmLanguage.json"
+            "language": "lox",
+            "scopeName": "source.lox",
+            "path": "./syntaxes/lox.tmLanguage.json"
         }],
         "notebooks": [{
-                "type": "lox-notebook",
-                "displayName": "Lox Notebook",
-                "selector": [
-                    {
-                        "filenamePattern": "*.loxnb"
-                    }
-                ]
+            "type": "lox-notebook",
+            "displayName": "Lox Notebook",
+            "selector": [
+                {
+                    "filenamePattern": "*.loxnb"
+                }
+            ]
         }]
     },
     "activationEvents": [
