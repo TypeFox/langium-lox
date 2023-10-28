@@ -3,13 +3,17 @@ import { BinaryExpression, Expression, isBinaryExpression, isBooleanExpression, 
 import { createLoxServices } from "../language-server/lox-module";
 import { v4 } from 'uuid';
 import { URI } from "vscode-uri";
-import { CancellationToken } from "vscode-languageclient";
+import { CancellationToken, CancellationTokenSource } from "vscode-languageserver";
 
 export interface InterpreterContext {
-    log: (value: unknown) => MaybePromise<void>
+    log: (value: unknown) => MaybePromise<void>,
+    onStart?: () => void,
 }
 
 const services = createLoxServices(EmptyFileSystem);
+
+// after 5 seconds, the interpreter will be interrupted and call onTimeout
+const TIMEOUT_MS = 1000 * 5;
 
 export async function runInterpreter(program: string, context: InterpreterContext): Promise<void> {
     const buildResult = await buildDocument(program);
@@ -25,7 +29,10 @@ type ReturnFunction = (value: unknown) => void;
 
 interface RunnerContext {
     variables: Variables,
-    log: (value: unknown) => MaybePromise<void>
+    cancellationToken: CancellationToken,
+    timeout: NodeJS.Timeout,
+    log: (value: unknown) => MaybePromise<void>,
+    onStart?: () => void,
 }
 
 class Variables {
@@ -88,16 +95,37 @@ async function buildDocument(program: string): Promise<BuildResult> {
     }
 }
 
-async function runProgram(program: LoxProgram, outerContext: InterpreterContext): Promise<void> {
+export async function runProgram(program: LoxProgram, outerContext: InterpreterContext): Promise<void> {
+    const cancellationTokenSource = new CancellationTokenSource();
+    const cancellationToken = cancellationTokenSource.token;
+    
+    const timeout = setTimeout(async () => {
+        cancellationTokenSource.cancel();  
+    }, TIMEOUT_MS);
+    
     const context: RunnerContext = {
         variables: new Variables(),
-        log: outerContext.log
+        cancellationToken,
+        timeout,
+        log: outerContext.log,
+        onStart: outerContext.onStart,
     };
-    context.variables.enter();
+
     let end = false;
+    
+    context.variables.enter();
+    if (context.onStart) {
+        context.onStart();
+    }
+
     for (const statement of program.elements) {
+        await interruptAndCheck(context.cancellationToken);
+
         if (!isClass(statement) && !isFunctionDeclaration(statement)) {
             await runLoxElement(statement, context, () => { end = true });
+        }
+        else if (isClass(statement)) {
+            throw new AstNodeError(statement, 'Classes are currently unsupported');
         }
         if (end) {
             break;
@@ -107,6 +135,8 @@ async function runProgram(program: LoxProgram, outerContext: InterpreterContext)
 }
 
 async function runLoxElement(element: LoxElement, context: RunnerContext, returnFn: ReturnFunction): Promise<void> {
+    await interruptAndCheck(context.cancellationToken);
+
     if (isExpressionBlock(element)) {
         await interruptAndCheck(CancellationToken.None);
         context.variables.enter();
@@ -164,6 +194,9 @@ async function runLoxElement(element: LoxElement, context: RunnerContext, return
 }
 
 async function runExpression(expression: Expression, context: RunnerContext): Promise<unknown> {
+    await interruptAndCheck(context.cancellationToken);
+
+
     if (isBinaryExpression(expression)) {
         const { left, right, operator } = expression;
         const rightValue = await runExpression(right, context);
@@ -244,6 +277,8 @@ async function setExpressionValue(left: Expression, right: unknown, context: Run
 }
 
 async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Promise<unknown> {
+    await interruptAndCheck(context.cancellationToken);
+
     let previous: unknown = undefined;
     if (memberCall.previous) {
         previous = await runExpression(memberCall.previous, context);
@@ -255,7 +290,7 @@ async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Pr
     } else if (isVariableDeclaration(ref) || isParameter(ref)) {
         value = context.variables.get(memberCall, ref.name);
     } else if (isClass(ref)) {
-        throw new AstNodeError(memberCall, 'Classes are current unsupported');
+        throw new AstNodeError(memberCall, 'Classes are currently unsupported');
     } else {
         value = previous;
     }
@@ -316,6 +351,7 @@ function applyOperator(node: BinaryExpression, operator: string, left: unknown, 
         throw new AstNodeError(node, `Operator ${operator} is unknown`);
     }
 }
+
 
 function isNumber(value: unknown): value is number {
     return typeof value === 'number';

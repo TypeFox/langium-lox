@@ -6,6 +6,9 @@
         "fileExtensions": [".lox"],
         "textMate": {
             "out": "syntaxes/lox.tmLanguage.json"
+        },
+        "monarch": {
+            "out": "syntaxes/lox.monarch.ts"
         }
     }],
     "out": "src/language-server/generated"
