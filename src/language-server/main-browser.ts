@@ -5,9 +5,9 @@
  ******************************************************************************/
 
 import { startLanguageServer, EmptyFileSystem, DocumentState, LangiumDocument, OperationCancelled } from 'langium';
-import { BrowserMessageReader, BrowserMessageWriter, Diagnostic, NotificationType, createConnection } from 'vscode-languageserver/browser';
-import { runInterpreter } from '../interpreter/runner';
-import { createLoxServices } from './lox-module';
+import { BrowserMessageReader, BrowserMessageWriter, Diagnostic, NotificationType, createConnection } from 'vscode-languageserver/browser.js';
+import { runInterpreter } from '../interpreter/runner.js';
+import { createLoxServices } from './lox-module.js';
 
 declare const self: DedicatedWorkerGlobalScope;
 

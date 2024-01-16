@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import {
     LanguageClient, LanguageClientOptions, ServerOptions, TransportKind
-} from 'vscode-languageclient/node';
-import { LoxNotebookSerializer } from './notebook/lox-notebook-serializer';
-import { LoxNotebookKernel } from './notebook/lox-notebook-kernel';
+} from 'vscode-languageclient/node.js';
+import { LoxNotebookSerializer } from './notebook/lox-notebook-serializer.js';
+import { LoxNotebookKernel } from './notebook/lox-notebook-kernel.js';
 
 let client: LanguageClient;
 

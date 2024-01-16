@@ -1,7 +1,7 @@
 import { DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, LangiumServices, ReferenceInfo, Scope } from "langium";
-import { Class, isClass, MemberCall } from "./generated/ast";
-import { isClassType } from "./type-system/descriptions";
-import { getClassChain, inferType } from "./type-system/infer";
+import { Class, isClass, MemberCall } from "./generated/ast.js";
+import { isClassType } from "./type-system/descriptions.js";
+import { getClassChain, inferType } from "./type-system/infer.js";
 
 export class LoxScopeProvider extends DefaultScopeProvider {
 

@@ -1,6 +1,6 @@
 import { AstNode, EmptyFileSystem, interruptAndCheck, LangiumDocument, MaybePromise } from "langium";
-import { BinaryExpression, Expression, isBinaryExpression, isBooleanExpression, isClass, isExpression, isExpressionBlock, isForStatement, isFunctionDeclaration, isIfStatement, isMemberCall, isNilExpression, isNumberExpression, isParameter, isPrintStatement, isReturnStatement, isStringExpression, isUnaryExpression, isVariableDeclaration, isWhileStatement, LoxElement, LoxProgram, MemberCall } from "../language-server/generated/ast";
-import { createLoxServices } from "../language-server/lox-module";
+import { BinaryExpression, Expression, isBinaryExpression, isBooleanExpression, isClass, isExpression, isExpressionBlock, isForStatement, isFunctionDeclaration, isIfStatement, isMemberCall, isNilExpression, isNumberExpression, isParameter, isPrintStatement, isReturnStatement, isStringExpression, isUnaryExpression, isVariableDeclaration, isWhileStatement, LoxElement, LoxProgram, MemberCall } from "../language-server/generated/ast.js";
+import { createLoxServices } from "../language-server/lox-module.js";
 import { v4 } from 'uuid';
 import { URI } from "vscode-uri";
 import { CancellationToken, CancellationTokenSource } from "vscode-languageserver";

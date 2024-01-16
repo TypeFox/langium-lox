@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { runInterpreter } from '../interpreter/runner';
+import { runInterpreter } from '../interpreter/runner.js';
 
 export class LoxNotebookKernel {
     readonly id = 'lox-kernel';

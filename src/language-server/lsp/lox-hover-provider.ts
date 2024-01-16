@@ -1,8 +1,8 @@
 import { AstNode, AstNodeHoverProvider } from "langium";
 import { Hover } from "vscode-languageclient";
-import { isClass, isNamedElement } from "../generated/ast";
-import { isErrorType, typeToString } from "../type-system/descriptions";
-import { inferType } from "../type-system/infer";
+import { isClass, isNamedElement } from "../generated/ast.js";
+import { isErrorType, typeToString } from "../type-system/descriptions.js";
+import { inferType } from "../type-system/infer.js";
 
 export class LoxHoverProvider extends AstNodeHoverProvider {
     protected getAstNodeHoverContent(node: AstNode): Hover | undefined {

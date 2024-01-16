@@ -1,17 +1,22 @@
 {
   "compilerOptions": {
-    "target": "ES6",
-    "module": "commonjs",
-    "lib": ["ESNext", "WebWorker"],
+    "target": "ES2022",
+    "module": "NodeNext",
+    "lib": [
+      "ES2022",
+      "WebWorker"
+    ],
     "sourceMap": true,
     "outDir": "out",
+    "rootDir": "src",
     "strict": true,
     "noUnusedLocals": true,
     "noImplicitReturns": true,
-    "moduleResolution": "node",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
   },
   "include": [
      "src/**/*.ts"
