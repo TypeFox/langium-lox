@@ -6,11 +6,13 @@ This repository contains a [Langium](https://langium.org) based implementation o
 
 ## How to build
 
-Langium requires Node.js >=14 and npm >=7. Once you have those requirements installed, you can build the language using:
+Langium requires Node.js >=20 and npm >=10 (we recommend using [Volta](https://volta.sh/) to ensure your node & npm always match). Once you have those requirements installed, you can build the language using:
 
-```
+```shell
 npm install
 ```
+
+Then either use `npm run watch` or `npm run watch` depending on your needs.
 
 This will automatically compile the language and other sources. Afterwards you can run the language using the `Run Extension` vscode launch config.
 
@@ -18,7 +20,23 @@ The [`examples/basic.lox`](https://github.com/langium/langium-lox/blob/main/exam
 
 ## How does it work
 
-The [langium grammar](https://github.com/langium/langium-lox/blob/main/src/language-server/lox.langium) contains all of the magic necessary to make the Lox language run in vscode.
+The [langium grammar](https://github.com/langium/langium-lox/blob/main/langium/src/language-server/lox.langium) contains all of the magic necessary to make the Lox language run in vscode.
 
 It contains a grammar definition of the Lox language which is transformed into a parser for that language.
 Langium additionally provides advanced editor features, such as code completion, goto reference/find references, folding, and more.
+
+## Debugging the CLI
+
+You can either use `node` or `vite-node` to debug the interpreter:
+
+In VSCode open a **JavaScript Debug Terminal** and then execute either use the first command not requiring any pre-compilation:
+
+```shell
+npx vite-node ./langium/src/interpreter/cli.ts run ./examples/basic.lox
+```
+
+or the second command
+
+```shell
+node ./langium/lib/interpreter/cli.js run ./examples/basic.lox
+```

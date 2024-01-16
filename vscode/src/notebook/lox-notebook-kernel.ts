@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { runInterpreter } from '../interpreter/runner.js';
+import { runInterpreter } from 'langium-lox/interpreter';
 
 export class LoxNotebookKernel {
     readonly id = 'lox-kernel';
@@ -25,7 +25,7 @@ export class LoxNotebookKernel {
     }
 
     private async _executeAll(cells: vscode.NotebookCell[], _notebook: vscode.NotebookDocument, _controller: vscode.NotebookController): Promise<void> {
-        for (let cell of cells) {
+        for (const cell of cells) {
             await this._doExecution(cell);
         }
     }

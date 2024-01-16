@@ -122,7 +122,11 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
         await interruptAndCheck(context.cancellationToken);
 
         if (!isClass(statement) && !isFunctionDeclaration(statement)) {
-            await runLoxElement(statement, context, () => { end = true });
+            try {
+                await runLoxElement(statement, context, () => { end = true });
+            } catch (e) {
+                console.error(`Unexpected error occurred: ${e}`)
+            }
         }
         else if (isClass(statement)) {
             throw new AstNodeError(statement, 'Classes are currently unsupported');
@@ -159,14 +163,14 @@ async function runLoxElement(element: LoxElement, context: RunnerContext, return
         context.variables.push(element.name, value);
     } else if (isIfStatement(element)) {
         const condition = await runExpression(element.condition, context);
-        if (Boolean(condition)) {
+        if (condition === true) {
             await runLoxElement(element.block, context, returnFn);
         } else if (element.elseBlock) {
             await runLoxElement(element.elseBlock, context, returnFn);
         }
     } else if (isWhileStatement(element)) {
         const { condition, block } = element;
-        while (Boolean(await runExpression(condition, context))) {
+        while (await runExpression(condition, context) === true) {
             await runLoxElement(block, context, returnFn);
         }
     } else if (isForStatement(element)) {
@@ -266,6 +270,7 @@ async function setExpressionValue(left: Expression, right: unknown, context: Run
             throw new AstNodeError(left, 'Cannot resolve name');
         }
         if (previous) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (previous as any)[name] = right;
         } else if (isVariableDeclaration(ref)) {
             context.variables.set(left, name, right);
@@ -321,7 +326,9 @@ function applyOperator(node: BinaryExpression, operator: string, left: unknown, 
     if (check && (!check(left) || !check(right))) {
         throw new AstNodeError(node, `Cannot apply operator '${operator}' to values of type '${typeof left}' and '${typeof right}'`);
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyLeft = left as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyRight = right as any;
     if (operator === '+') {
         return anyLeft + anyRight;

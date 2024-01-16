@@ -5,10 +5,10 @@
         "grammar": "src/language-server/lox.langium",
         "fileExtensions": [".lox"],
         "textMate": {
-            "out": "syntaxes/lox.tmLanguage.json"
+            "out": "../vscode/syntaxes/lox.tmLanguage.json"
         },
         "monarch": {
-            "out": "syntaxes/lox.monarch.ts"
+            "out": "../vscode/syntaxes/lox.monarch.ts"
         }
     }],
     "importExtension": ".js",

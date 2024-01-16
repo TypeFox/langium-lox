@@ -113,7 +113,7 @@ function inferMemberCall(node: MemberCall, cache: Map<AstNode, TypeDescription>)
         }
         return createErrorType('Cannot call operation on non-function type', node);
     }
-    return createErrorType('Could not infer type for element ' + node.element?.$refText ?? 'undefined', node);
+    return createErrorType('Could not infer type for element ' + node.element?.$refText, node);
 }
 
 function inferBinaryExpression(expr: BinaryExpression, cache: Map<AstNode, TypeDescription>): TypeDescription {

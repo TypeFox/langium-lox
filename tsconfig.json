@@ -6,6 +6,10 @@
       "ES2022",
       "WebWorker"
     ],
+    // Enable project compilation
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
     "outDir": "out",
     "rootDir": "src",
@@ -14,15 +18,17 @@
     "noImplicitReturns": true,
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
-    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
+    "resolveJsonModule": true
   },
   "include": [
-     "src/**/*.ts"
+    "**/src/**/*.ts",
+    "**/src/**/*.tsx",
+    "*.ts"
   ],
   "exclude": [
-     "out",
-     "node_modules"
+    "**/lib/**/*",
+    "**/out/**/*",    
+    "**/node_modules/**/*"
   ]
 }

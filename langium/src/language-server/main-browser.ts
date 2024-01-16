@@ -40,6 +40,7 @@ shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.Validated, async doc
                         sendMessage(document, "notification", "startInterpreter");
                     },
                 });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (e: any) {
                 if (e === OperationCancelled) {
                     sendMessage(document, "error", "Interpreter timed out");
