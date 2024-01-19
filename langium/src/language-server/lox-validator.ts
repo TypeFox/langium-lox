@@ -1,10 +1,10 @@
 import { AstNode, streamAllContents, ValidationAcceptor, ValidationChecks, ValidationRegistry } from 'langium';
-import { BinaryExpression, Class, ExpressionBlock, FunctionDeclaration, isReturnStatement, LoxAstType, MethodMember, TypeReference, UnaryExpression, VariableDeclaration } from './generated/ast';
-import type { LoxServices } from './lox-module';
-import { isAssignable } from './type-system/assignment';
-import { isVoidType, TypeDescription, typeToString } from './type-system/descriptions';
-import { inferType } from './type-system/infer';
-import { isLegalOperation } from './type-system/operator';
+import { BinaryExpression, Class, ExpressionBlock, FunctionDeclaration, isReturnStatement, LoxAstType, MethodMember, TypeReference, UnaryExpression, VariableDeclaration } from './generated/ast.js';
+import type { LoxServices } from './lox-module.js';
+import { isAssignable } from './type-system/assignment.js';
+import { isVoidType, TypeDescription, typeToString } from './type-system/descriptions.js';
+import { inferType } from './type-system/infer.js';
+import { isLegalOperation } from './type-system/operator.js';
 
 /**
  * Registry for validation checks.

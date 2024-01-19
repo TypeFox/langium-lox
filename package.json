@@ -1,85 +1,34 @@
 {
-    "name": "langium-lox",
-    "displayName": "langium-lox",
-    "description": "Please enter a brief description here",
-    "version": "0.0.1",
-    "engines": {
-        "vscode": "^1.56.0"
-    },
-    "categories": [
-        "Programming Languages"
-    ],
-    "contributes": {
-        "languages": [
-            {
-                "id": "lox",
-                "aliases": [
-                    "Lox",
-                    "lox"
-                ],
-                "extensions": [
-                    ".lox"
-                ],
-                "configuration": "./language-configuration.json"
-            }
-        ],
-        "grammars": [
-            {
-                "language": "lox",
-                "scopeName": "source.lox",
-                "path": "./syntaxes/lox.tmLanguage.json"
-            }
-        ],
-        "notebooks": [
-            {
-                "type": "lox-notebook",
-                "displayName": "Lox Notebook",
-                "selector": [
-                    {
-                        "filenamePattern": "*.loxnb"
-                    }
-                ]
-            }
-        ]
-    },
-    "activationEvents": [
-        "onLanguage:lox"
-    ],
-    "files": [
-        "bin",
-        "out",
-        "src"
-    ],
-    "bin": {
-        "lox-cli": "./bin/cli"
-    },
-    "main": "./out/extension.js",
-    "scripts": {
-        "prepare": "npm run langium:generate && npm run build",
-        "vscode:prepublish": "npm run build && npm run lint",
-        "build": "tsc -b tsconfig.json",
-        "watch": "tsc -b tsconfig.json --watch",
-        "lint": "eslint src --ext ts",
-        "clean": "shx rm -rf out node_modules",
-        "langium:generate": "langium generate",
-        "langium:watch": "langium generate --watch"
-    },
-    "dependencies": {
-        "colors": "^1.4.0",
-        "commander": "^8.0.0",
-        "langium": "~1.2.1",
-        "uuid": "^9.0.0",
-        "vscode-languageclient": "^8.1.0"
-    },
+    "name": "langium-lox-workspace",
+    "displayName": "langium-lox-workspace",
+    "description": "langium-lox-workspace",
+    "private": true,
+    "type": "module",
     "devDependencies": {
-        "@types/node": "^14.17.3",
-        "@types/uuid": "^9.0.0",
-        "@types/vscode": "^1.56.0",
-        "@typescript-eslint/eslint-plugin": "^4.14.1",
-        "@typescript-eslint/parser": "^4.14.1",
-        "eslint": "^7.19.0",
-        "langium-cli": "~1.2.1",
-        "shx": "^0.3.4",
-        "typescript": "^4.6.2"
-    }
+        "@types/node": "~20.11.5",
+        "@typescript-eslint/eslint-plugin": "~6.19.0",
+        "@typescript-eslint/parser": "~6.19.0",
+        "concurrently": "~8.2.2",
+        "eslint": "~8.56.0",
+        "shx": "~0.3.4",
+        "typescript": "~5.3.3"
+    },
+    "scripts": {
+        "clean": "npm run clean --workspaces",
+        "compile": "npm run compile --workspaces",
+        "watch": "npm run clean && concurrently -n tsc,langium,vscode -c blue,cyan,magenta \"tsc --build tsconfig.build.json --watch --verbose\" \"npm run watch:langium\" \"npm run watch:esbuild\"",
+        "watch:langium": "npm run watch:langium --workspace langium",
+        "watch:esbuild": "npm run watch:esbuild --workspace vscode",
+        "build": "npm run clean && npm run compile",
+        "lint": "eslint **/src/**/*.ts",
+        "vscode:prepublish": "npm run lint && npm run vscode:prepublish --workspace vscode"
+    },
+    "volta": {
+        "node": "20.11.0",
+        "npm": "10.2.4"
+    },
+    "workspaces": [
+        "langium",
+        "vscode"
+    ]
 }

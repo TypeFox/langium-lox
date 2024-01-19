@@ -5,7 +5,7 @@ import {
     Class,
     NumberExpression,
     StringExpression
-} from "../generated/ast"
+} from "../generated/ast.js"
 
 export type TypeDescription =
     | NilTypeDescription

@@ -19,7 +19,7 @@ interface RawNotebookCell {
 export class LoxNotebookSerializer implements vscode.NotebookSerializer {
     public readonly label: string = 'Lox Content Serializer';
 
-    public async deserializeNotebook(data: Uint8Array, token: vscode.CancellationToken): Promise<vscode.NotebookData> {
+    public async deserializeNotebook(data: Uint8Array, _token: vscode.CancellationToken): Promise<vscode.NotebookData> {
         var contents = new TextDecoder().decode(data);    // convert to String to make JSON object
 
         // Read file contents
@@ -43,7 +43,7 @@ export class LoxNotebookSerializer implements vscode.NotebookSerializer {
         );
     }
 
-    public async serializeNotebook(data: vscode.NotebookData, token: vscode.CancellationToken): Promise<Uint8Array> {
+    public async serializeNotebook(data: vscode.NotebookData, _token: vscode.CancellationToken): Promise<Uint8Array> {
         // Map the Notebook data into the format we want to save the Notebook data as
         let contents: RawNotebookData = { cells: [] };
 

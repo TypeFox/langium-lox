@@ -94,7 +94,7 @@ fun identity(a: (number, number) => number): (number, number) => number {
     return a;
 }
 
-print identity(returnSum)(1, 2); // prints "3";
+print identity(returnSum(1, 2)); // prints "3";
 
 fun outerFunction(): void {
     fun localFunction(): void {
@@ -110,11 +110,13 @@ fun returnFunction(): () => void {
         print outside;
     }
 
-    return inner;
+    return inner();
 }
 
+returnFunction();
+
 var fn = returnFunction();
-fn();
+fn;
 
 // Classes WIP
 

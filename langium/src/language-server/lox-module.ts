@@ -2,10 +2,10 @@ import {
     createDefaultModule, createDefaultSharedModule, DefaultSharedModuleContext, inject,
     LangiumServices, LangiumSharedServices, Module, PartialLangiumServices
 } from 'langium';
-import { LoxGeneratedModule, LoxGeneratedSharedModule } from './generated/module';
-import { LoxScopeProvider } from './lox-scope';
-import { LoxValidationRegistry, LoxValidator } from './lox-validator';
-import { LoxHoverProvider } from './lsp/lox-hover-provider';
+import { LoxGeneratedModule, LoxGeneratedSharedModule } from './generated/module.js';
+import { LoxScopeProvider } from './lox-scope.js';
+import { LoxValidationRegistry, LoxValidator } from './lox-validator.js';
+import { LoxHoverProvider } from './lsp/lox-hover-provider.js';
 
 /**
  * Declaration of custom services - add your own service classes here.

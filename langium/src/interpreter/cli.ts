@@ -1,11 +1,12 @@
 import { Command } from 'commander';
 import fs from 'fs';
-import { runInterpreter } from './runner';
+import { runInterpreter } from './runner.js';
+import pkg from '../../package.json' assert { type: 'json' };
 
 const program = new Command();
 
 program
-    .version(require('../../package.json').version);
+    .version(pkg.version);
 
 program
     .command('run')
