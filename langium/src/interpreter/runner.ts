@@ -122,15 +122,11 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
         await interruptAndCheck(context.cancellationToken);
 
         if (!isClass(statement) && !isFunctionDeclaration(statement)) {
-            try {
-                await runLoxElement(statement, context, () => { end = true });
-            } catch (e) {
-                console.error(`Unexpected error occurred: ${e}`)
-            }
-        }
-        else if (isClass(statement)) {
+            await runLoxElement(statement, context, () => { end = true });
+        } else if (isClass(statement)) {
             throw new AstNodeError(statement, 'Classes are currently unsupported');
         }
+
         if (end) {
             break;
         }
@@ -301,10 +297,17 @@ async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Pr
     }
 
     if (memberCall.explicitOperationCall) {
+        let func;
         if (isFunctionDeclaration(ref)) {
+            func = ref;
+        }
+        if (isFunctionDeclaration(value)) {
+            func = value;
+        }
+        if (func) {
             const args = await Promise.all(memberCall.arguments.map(e => runExpression(e, context)));
             context.variables.enter();
-            const names = ref.parameters.map(e => e.name);
+            const names = func.parameters.map(e => e.name);
             for (let i = 0; i < args.length; i++) {
                 context.variables.push(names[i], args[i]);
             }
@@ -312,7 +315,7 @@ async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Pr
             const returnFn: ReturnFunction = (returnValue) => {
                 functionValue = returnValue;
             }
-            await runLoxElement(ref.body, context, returnFn);
+            await runLoxElement(func.body, context, returnFn);
             context.variables.leave();
             return functionValue;
         } else {

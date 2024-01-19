@@ -27,15 +27,7 @@ Langium additionally provides advanced editor features, such as code completion,
 
 ## Debugging the CLI
 
-You can either use `node` or `vite-node` to debug the interpreter:
-
-In VSCode open a **JavaScript Debug Terminal** and then execute either use the first command not requiring any pre-compilation:
-
-```shell
-npx vite-node ./langium/src/interpreter/cli.ts run ./examples/basic.lox
-```
-
-or the second command
+In VSCode open a **JavaScript Debug Terminal** and then execute the following command:
 
 ```shell
 node ./langium/lib/interpreter/cli.js run ./examples/basic.lox
