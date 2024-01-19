@@ -110,11 +110,13 @@ fun returnFunction(): () => void {
         print outside;
     }
 
-    return inner;
+    return inner();
 }
 
+returnFunction();
+
 var fn = returnFunction();
-fn();
+fn;
 
 // Classes WIP
 
