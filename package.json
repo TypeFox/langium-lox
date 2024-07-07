@@ -10,26 +10,37 @@
         "Programming Languages"
     ],
     "contributes": {
-        "languages": [{
-            "id": "lox",
-            "aliases": ["Lox", "lox"],
-            "extensions": [".lox"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "lox",
-            "scopeName": "source.lox",
-            "path": "./syntaxes/lox.tmLanguage.json"
-        }],
-        "notebooks": [{
-            "type": "lox-notebook",
-            "displayName": "Lox Notebook",
-            "selector": [
-                {
-                    "filenamePattern": "*.loxnb"
-                }
-            ]
-        }]
+        "languages": [
+            {
+                "id": "lox",
+                "aliases": [
+                    "Lox",
+                    "lox"
+                ],
+                "extensions": [
+                    ".lox"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "lox",
+                "scopeName": "source.lox",
+                "path": "./syntaxes/lox.tmLanguage.json"
+            }
+        ],
+        "notebooks": [
+            {
+                "type": "lox-notebook",
+                "displayName": "Lox Notebook",
+                "selector": [
+                    {
+                        "filenamePattern": "*.loxnb"
+                    }
+                ]
+            }
+        ]
     },
     "activationEvents": [
         "onLanguage:lox"
@@ -49,18 +60,16 @@
         "build": "tsc -b tsconfig.json",
         "watch": "tsc -b tsconfig.json --watch",
         "lint": "eslint src --ext ts",
+        "clean": "shx rm -rf out node_modules",
         "langium:generate": "langium generate",
         "langium:watch": "langium generate --watch"
     },
     "dependencies": {
-        "chevrotain": "^9.1.0",
         "colors": "^1.4.0",
         "commander": "^8.0.0",
-        "langium": "1.0.1",
+        "langium": "~1.2.1",
         "uuid": "^9.0.0",
-        "vscode-languageclient": "8.0.2",
-        "vscode-languageserver": "8.0.2",
-        "vscode-uri": "^3.0.2"
+        "vscode-languageclient": "^8.1.0"
     },
     "devDependencies": {
         "@types/node": "^14.17.3",
@@ -69,7 +78,8 @@
         "@typescript-eslint/eslint-plugin": "^4.14.1",
         "@typescript-eslint/parser": "^4.14.1",
         "eslint": "^7.19.0",
-        "langium-cli": "1.0.0",
+        "langium-cli": "~1.2.1",
+        "shx": "^0.3.4",
         "typescript": "^4.6.2"
     }
 }
