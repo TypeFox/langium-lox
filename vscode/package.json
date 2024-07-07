@@ -67,7 +67,8 @@
         "langium-lox": "~0.0.2"
     },
     "devDependencies": {
-        "@types/vscode": "~1.85.0"
+        "@types/vscode": "~1.85.0",
+        "esbuild": "^0.23.0"
     },
     "volta": {
         "node": "20.11.0",

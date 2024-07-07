@@ -38,7 +38,6 @@
         "ls-browser": [
           "lib/language-server/main-browser"
         ]
-
       }
     },
     "files": [
@@ -48,14 +47,14 @@
     "dependencies": {
         "colors": "~1.4.0",
         "commander": "~11.1.0",
-        "langium": "~2.1.3",
+        "langium": "~3.1.2",
         "uuid": "~9.0.1",
         "vscode-languageclient": "~9.0.1"
     },
     "devDependencies": {
         "@types/node": "~20.11.3",
         "@types/uuid": "~9.0.7",
-        "langium-cli": "~2.1.0"
+        "langium-cli": "~3.1.0"
     },
     "volta": {
         "node": "20.11.0",

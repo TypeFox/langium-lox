@@ -1,4 +1,4 @@
-import { AstNode, streamAllContents, ValidationAcceptor, ValidationChecks, ValidationRegistry } from 'langium';
+import { AstNode, AstUtils, ValidationAcceptor, ValidationChecks, ValidationRegistry } from 'langium';
 import { BinaryExpression, Class, ExpressionBlock, FunctionDeclaration, isReturnStatement, LoxAstType, MethodMember, TypeReference, UnaryExpression, VariableDeclaration } from './generated/ast.js';
 import type { LoxServices } from './lox-module.js';
 import { isAssignable } from './type-system/assignment.js';
@@ -48,7 +48,7 @@ export class LoxValidator {
 
     private checkFunctionReturnTypeInternal(body: ExpressionBlock, returnType: TypeReference, accept: ValidationAcceptor): void {
         const map = this.getTypeCache();
-        const returnStatements = streamAllContents(body).filter(isReturnStatement).toArray();
+        const returnStatements = AstUtils.streamAllContents(body).filter(isReturnStatement).toArray();
         const expectedType = inferType(returnType, map);
         if (returnStatements.length === 0 && !isVoidType(expectedType)) {
             accept('error', "A function whose declared type is not 'void' must return a value.", {

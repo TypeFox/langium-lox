@@ -4,10 +4,11 @@
  * terms of the MIT License, which is available in the project root.
  ******************************************************************************/
 
-import { startLanguageServer, EmptyFileSystem, DocumentState, LangiumDocument, OperationCancelled } from 'langium';
+import { EmptyFileSystem, DocumentState, LangiumDocument, OperationCancelled } from 'langium';
 import { BrowserMessageReader, BrowserMessageWriter, Diagnostic, NotificationType, createConnection } from 'vscode-languageserver/browser.js';
 import { runInterpreter } from '../interpreter/runner.js';
 import { createLoxServices } from './lox-module.js';
+import { startLanguageServer } from 'langium/lsp';
 
 declare const self: DedicatedWorkerGlobalScope;
 
