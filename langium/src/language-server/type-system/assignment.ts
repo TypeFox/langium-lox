@@ -1,5 +1,5 @@
-import { isClassType, isFunctionType, isNilType, TypeDescription } from "./descriptions";
-import { getClassChain } from "./infer";
+import { isClassType, isFunctionType, isNilType, TypeDescription } from "./descriptions.js";
+import { getClassChain } from "./infer.js";
 
 export function isAssignable(from: TypeDescription, to: TypeDescription): boolean {
     if (isClassType(from)) {

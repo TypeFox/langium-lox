@@ -1,9 +1,8 @@
-import { AstNode, EmptyFileSystem, interruptAndCheck, LangiumDocument, MaybePromise } from "langium";
-import { BinaryExpression, Expression, isBinaryExpression, isBooleanExpression, isClass, isExpression, isExpressionBlock, isForStatement, isFunctionDeclaration, isIfStatement, isMemberCall, isNilExpression, isNumberExpression, isParameter, isPrintStatement, isReturnStatement, isStringExpression, isUnaryExpression, isVariableDeclaration, isWhileStatement, LoxElement, LoxProgram, MemberCall } from "../language-server/generated/ast";
-import { createLoxServices } from "../language-server/lox-module";
+import { AstNode, EmptyFileSystem, interruptAndCheck, LangiumDocument, MaybePromise, URI } from "langium";
+import { BinaryExpression, Expression, isBinaryExpression, isBooleanExpression, isClass, isExpression, isExpressionBlock, isForStatement, isFunctionDeclaration, isIfStatement, isMemberCall, isNilExpression, isNumberExpression, isParameter, isPrintStatement, isReturnStatement, isStringExpression, isUnaryExpression, isVariableDeclaration, isWhileStatement, LoxElement, LoxProgram, MemberCall } from "../language-server/generated/ast.js";
+import { createLoxServices } from "../language-server/lox-module.js";
 import { v4 } from 'uuid';
-import { URI } from "vscode-uri";
-import { CancellationToken, CancellationTokenSource } from "vscode-languageserver";
+import { CancellationToken, CancellationTokenSource } from "vscode-jsonrpc";
 
 export interface InterpreterContext {
     log: (value: unknown) => MaybePromise<void>,
@@ -123,10 +122,10 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
 
         if (!isClass(statement) && !isFunctionDeclaration(statement)) {
             await runLoxElement(statement, context, () => { end = true });
-        }
-        else if (isClass(statement)) {
+        } else if (isClass(statement)) {
             throw new AstNodeError(statement, 'Classes are currently unsupported');
         }
+
         if (end) {
             break;
         }
@@ -159,14 +158,14 @@ async function runLoxElement(element: LoxElement, context: RunnerContext, return
         context.variables.push(element.name, value);
     } else if (isIfStatement(element)) {
         const condition = await runExpression(element.condition, context);
-        if (Boolean(condition)) {
+        if (condition === true) {
             await runLoxElement(element.block, context, returnFn);
         } else if (element.elseBlock) {
             await runLoxElement(element.elseBlock, context, returnFn);
         }
     } else if (isWhileStatement(element)) {
         const { condition, block } = element;
-        while (Boolean(await runExpression(condition, context))) {
+        while (await runExpression(condition, context) === true) {
             await runLoxElement(block, context, returnFn);
         }
     } else if (isForStatement(element)) {
@@ -266,6 +265,7 @@ async function setExpressionValue(left: Expression, right: unknown, context: Run
             throw new AstNodeError(left, 'Cannot resolve name');
         }
         if (previous) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (previous as any)[name] = right;
         } else if (isVariableDeclaration(ref)) {
             context.variables.set(left, name, right);
@@ -296,10 +296,17 @@ async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Pr
     }
 
     if (memberCall.explicitOperationCall) {
+        let func;
         if (isFunctionDeclaration(ref)) {
+            func = ref;
+        }
+        if (isFunctionDeclaration(value)) {
+            func = value;
+        }
+        if (func) {
             const args = await Promise.all(memberCall.arguments.map(e => runExpression(e, context)));
             context.variables.enter();
-            const names = ref.parameters.map(e => e.name);
+            const names = func.parameters.map(e => e.name);
             for (let i = 0; i < args.length; i++) {
                 context.variables.push(names[i], args[i]);
             }
@@ -307,7 +314,7 @@ async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Pr
             const returnFn: ReturnFunction = (returnValue) => {
                 functionValue = returnValue;
             }
-            await runLoxElement(ref.body, context, returnFn);
+            await runLoxElement(func.body, context, returnFn);
             context.variables.leave();
             return functionValue;
         } else {
@@ -321,7 +328,9 @@ function applyOperator(node: BinaryExpression, operator: string, left: unknown, 
     if (check && (!check(left) || !check(right))) {
         throw new AstNodeError(node, `Cannot apply operator '${operator}' to values of type '${typeof left}' and '${typeof right}'`);
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyLeft = left as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyRight = right as any;
     if (operator === '+') {
         return anyLeft + anyRight;

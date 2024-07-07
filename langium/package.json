@@ -1,0 +1,73 @@
+{
+    "name": "langium-lox",
+    "displayName": "langium-lox",
+    "description": "langium-lox",
+    "version": "0.0.2",
+    "type": "module",
+    "main": "./lib/index.js",
+    "module": "./lib/index.js",
+    "exports": {
+      ".": {
+        "types": "./lib/index.d.ts",
+        "default": "./lib/index.js"
+      },
+      "./interpreter": {
+        "types": "./lib/interpreter.d.ts",
+        "default": "./lib/interpreter.js"
+      },
+      "./ls-vscode": {
+        "types": "./lib/language-server/main.d.ts",
+        "default": "./lib/language-server/main.js"
+      },
+      "./ls-browser": {
+        "types": "./lib/language-server/main-browser.d.ts",
+        "default": "./lib/language-server/main-browser.js"
+      }
+    },
+    "typesVersions": {
+      "*": {
+        ".": [
+          "lib/index"
+        ],
+        "interpreter": [
+          "lib/interpreter"
+        ],
+        "ls-vscode": [
+          "lib/language-server/main"
+        ],
+        "ls-browser": [
+          "lib/language-server/main-browser"
+        ]
+      }
+    },
+    "files": [
+        "lib",
+        "src"
+    ],
+    "dependencies": {
+        "colors": "~1.4.0",
+        "commander": "~11.1.0",
+        "langium": "~3.1.2",
+        "uuid": "~9.0.1",
+        "vscode-languageclient": "~9.0.1"
+    },
+    "devDependencies": {
+        "@types/node": "~20.11.3",
+        "@types/uuid": "~9.0.7",
+        "langium-cli": "~3.1.0"
+    },
+    "volta": {
+        "node": "20.11.0",
+        "npm": "10.2.4"
+    },
+    "scripts": {
+        "clean": "shx rm -fr lib *.tsbuildinfo",
+        "compile:tsc": "tsc -b tsconfig.json",
+        "langium:generate": "langium generate",
+        "compile": " npm run langium:generate && npm run compile:tsc",
+        "watch:tsc": "tsc -b tsconfig.json --watch",
+        "watch:langium": "langium generate --watch",
+        "watch": "concurrently -n tsc,vscode -c orange,purple \"npm run watch:tsc\" \"npm run watch:langium\"",
+        "build": "npm run clean && npm run langium:generate && npm run compile"
+    }
+}

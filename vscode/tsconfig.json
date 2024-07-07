@@ -1,0 +1,16 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "rootDir": "src",
+        "outDir": "out",
+        "noEmit": true,
+        "module": "CommonJS",
+        "moduleResolution": "Node",
+    },
+    "references": [{
+        "path": "../langium"
+    }],
+    "include": [
+        "src/**/*.ts"
+    ]
+}

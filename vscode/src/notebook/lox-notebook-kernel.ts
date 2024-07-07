@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { runInterpreter } from '../interpreter/runner';
+import { runInterpreter } from 'langium-lox/interpreter';
 
 export class LoxNotebookKernel {
     readonly id = 'lox-kernel';
@@ -25,7 +25,7 @@ export class LoxNotebookKernel {
     }
 
     private async _executeAll(cells: vscode.NotebookCell[], _notebook: vscode.NotebookDocument, _controller: vscode.NotebookController): Promise<void> {
-        for (let cell of cells) {
+        for (const cell of cells) {
             await this._doExecution(cell);
         }
     }
@@ -37,10 +37,13 @@ export class LoxNotebookKernel {
         execution.start(Date.now());
 
         const text = cell.document.getText();
+        let lines = '';
         await execution.clearOutput();
+
         const log = async (value: unknown) => {
             const stringValue = `${value}`;
-            await execution.appendOutput(new vscode.NotebookCellOutput([vscode.NotebookCellOutputItem.text(stringValue)]));
+            lines += stringValue + '\n';
+            await execution.replaceOutput(new vscode.NotebookCellOutput([vscode.NotebookCellOutputItem.text(lines)]));
         }
 
         try {
@@ -48,7 +51,7 @@ export class LoxNotebookKernel {
             execution.end(true, Date.now());
         } catch (err) {
             const errString = err instanceof Error ? err.message : String(err);
-            await execution.appendOutput(new vscode.NotebookCellOutput([vscode.NotebookCellOutputItem.text(errString)]));
+            await execution.appendOutput(new vscode.NotebookCellOutput([vscode.NotebookCellOutputItem.error(new Error(errString))]));
             execution.end(false, Date.now());
         }
     }

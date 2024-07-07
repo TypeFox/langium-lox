@@ -10,8 +10,12 @@
             "type": "extensionHost",
             "request": "launch",
             "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionDevelopmentPath=${workspaceFolder}/vscode",
                 "${workspaceFolder}/examples"
+            ],
+            "sourceMaps": true,
+            "outFiles": [
+                "${workspaceFolder}/vscode/out/**/*.js"
             ]
         },
         {
@@ -24,7 +28,7 @@
             ],
             "sourceMaps": true,
             "outFiles": [
-                "${workspaceFolder}/out/**/*.js",
+                "${workspaceFolder}/langium/lib/**/*.js",
                 "${workspaceFolder}/node_modules/langium/**/*.js"
             ]
         }

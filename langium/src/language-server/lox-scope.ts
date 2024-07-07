@@ -1,7 +1,8 @@
-import { DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, LangiumServices, ReferenceInfo, Scope } from "langium";
-import { Class, isClass, MemberCall } from "./generated/ast";
-import { isClassType } from "./type-system/descriptions";
-import { getClassChain, inferType } from "./type-system/infer";
+import { AstUtils, DefaultScopeProvider, EMPTY_SCOPE, ReferenceInfo, Scope } from "langium";
+import { Class, isClass, MemberCall } from "./generated/ast.js";
+import { isClassType } from "./type-system/descriptions.js";
+import { getClassChain, inferType } from "./type-system/infer.js";
+import { LangiumServices } from "langium/lsp";
 
 export class LoxScopeProvider extends DefaultScopeProvider {
 
@@ -14,7 +15,7 @@ export class LoxScopeProvider extends DefaultScopeProvider {
         if (context.property === 'element') {
             // for now, `this` and `super` simply target the container class type
             if (context.reference.$refText === 'this' || context.reference.$refText === 'super') {
-                const classItem = getContainerOfType(context.container, isClass);
+                const classItem = AstUtils.getContainerOfType(context.container, isClass);
                 if (classItem) {
                     return this.scopeClassMembers(classItem);
                 } else {

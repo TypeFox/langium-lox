@@ -1,0 +1,77 @@
+{
+    "name": "langium-lox-vscode",
+    "displayName": "langium-lox-vscode",
+    "description": "VSCode Extension for Langium Lox",
+    "version": "0.0.2",
+    "type": "commonjs",
+    "engines": {
+        "vscode": "^1.56.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "lox",
+                "aliases": [
+                    "Lox",
+                    "lox"
+                ],
+                "extensions": [
+                    ".lox"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "lox",
+                "scopeName": "source.lox",
+                "path": "./syntaxes/lox.tmLanguage.json"
+            }
+        ],
+        "notebooks": [
+            {
+                "type": "lox-notebook",
+                "displayName": "Lox Notebook",
+                "selector": [
+                    {
+                        "filenamePattern": "*.loxnb"
+                    }
+                ]
+            }
+        ]
+    },
+    "activationEvents": [
+        "onLanguage:lox"
+    ],
+    "files": [
+        "bin",
+        "out",
+        "src"
+    ],
+    "main": "./out/extension.js",
+    "scripts": {
+        "clean": "shx rm -rf out *.tsbuildinfo",
+        "compile:tsc": "tsc -b tsconfig.json",
+        "compile:esbuild": "node esbuild.mjs",        
+        "compile": "npm run compile:tsc && npm run compile:esbuild",
+        "watch:tsc": "tsc -b tsconfig.json --watch",
+        "watch:esbuild": "tsc -b tsconfig.json --watch && node esbuild.mjs --watch",        
+        "watch": "concurrently -n tsc,vscode -c blue,green \"npm run watch:tsc\" \"npm run watch:esbuild\"",
+        "build": "npm run clean && npm run compile",
+        "vscode:prepublish": "npm run clean && npm run build"
+    },
+    "dependencies": {
+        "langium-lox": "~0.0.2"
+    },
+    "devDependencies": {
+        "@types/vscode": "~1.85.0",
+        "esbuild": "^0.23.0"
+    },
+    "volta": {
+        "node": "20.11.0",
+        "npm": "10.2.4"
+    }
+}
