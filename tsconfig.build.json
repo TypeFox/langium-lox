@@ -1,0 +1,7 @@
+{
+    "files": [],
+    "references": [
+        { "path": "langium/tsconfig.json" },
+        { "path": "vscode/tsconfig.json" }
+    ]
+}

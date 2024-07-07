@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import {
     LanguageClient, LanguageClientOptions, ServerOptions, TransportKind
-} from 'vscode-languageclient/node';
-import { LoxNotebookSerializer } from './notebook/lox-notebook-serializer';
-import { LoxNotebookKernel } from './notebook/lox-notebook-kernel';
+} from 'vscode-languageclient/node.js';
+import { LoxNotebookSerializer } from './notebook/lox-notebook-serializer.js';
+import { LoxNotebookKernel } from './notebook/lox-notebook-kernel.js';
 
 let client: LanguageClient;
 
@@ -29,7 +29,7 @@ export function deactivate(): Thenable<void> | undefined {
 }
 
 function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
-    const serverModule = context.asAbsolutePath(path.join('out', 'language-server', 'main'));
+    const serverModule = context.asAbsolutePath(path.join('out', 'language-server'));
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging.
     // By setting `process.env.DEBUG_BREAK` to a truthy value, the language server will wait until a debugger is attached.
