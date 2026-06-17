@@ -5,7 +5,7 @@
  ******************************************************************************/
 
 import { EmptyFileSystem, DocumentState, LangiumDocument, OperationCancelled } from 'langium';
-import { BrowserMessageReader, BrowserMessageWriter, Diagnostic, NotificationType, createConnection } from 'vscode-languageserver/browser.js';
+import { BrowserMessageReader, BrowserMessageWriter, Diagnostic, NotificationType, createConnection } from 'vscode-languageserver/browser';
 import { runInterpreter } from '../interpreter/runner.js';
 import { createLoxServices } from './lox-module.js';
 import { startLanguageServer } from 'langium/lsp';

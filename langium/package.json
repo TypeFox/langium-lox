@@ -47,14 +47,14 @@
     "dependencies": {
         "colors": "~1.4.0",
         "commander": "~11.1.0",
-        "langium": "~3.1.2",
+        "langium": "~4.3.0",
         "uuid": "~9.0.1",
         "vscode-languageclient": "~9.0.1"
     },
     "devDependencies": {
         "@types/node": "~20.11.3",
         "@types/uuid": "~9.0.7",
-        "langium-cli": "~3.1.0"
+        "langium-cli": "~4.3.0"
     },
     "volta": {
         "node": "20.11.0",
