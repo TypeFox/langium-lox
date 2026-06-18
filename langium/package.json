@@ -54,7 +54,8 @@
     "devDependencies": {
         "@types/node": "~20.11.3",
         "@types/uuid": "~9.0.7",
-        "langium-cli": "~4.3.0"
+        "langium-cli": "~4.3.0",
+        "vitest": "~4.1.9"
     },
     "volta": {
         "node": "20.11.0",
@@ -68,6 +69,8 @@
         "watch:tsc": "tsc -b tsconfig.json --watch",
         "watch:langium": "langium generate --watch",
         "watch": "concurrently -n tsc,vscode -c orange,purple \"npm run watch:tsc\" \"npm run watch:langium\"",
-        "build": "npm run clean && npm run langium:generate && npm run compile"
+        "build": "npm run clean && npm run langium:generate && npm run compile",
+        "test": "npm run langium:generate && vitest run",
+        "test:watch": "vitest"
     }
 }

@@ -1,8 +1,8 @@
 import { AstNode, AstUtils, ValidationAcceptor, ValidationChecks, ValidationRegistry } from 'langium';
-import { BinaryExpression, Class, ExpressionBlock, FunctionDeclaration, isReturnStatement, LoxAstType, MethodMember, TypeReference, UnaryExpression, VariableDeclaration } from './generated/ast.js';
+import { BinaryExpression, Class, FunctionDeclaration, isFunctionDeclaration, isMethodMember, isReturnStatement, LoxAstType, MemberCall, MethodMember, UnaryExpression, VariableDeclaration } from './generated/ast.js';
 import type { LoxServices } from './lox-module.js';
 import { isAssignable } from './type-system/assignment.js';
-import { isVoidType, TypeDescription, typeToString } from './type-system/descriptions.js';
+import { isFunctionType, isVoidType, TypeDescription, typeToString } from './type-system/descriptions.js';
 import { inferType } from './type-system/infer.js';
 import { isLegalOperation } from './type-system/operator.js';
 
@@ -17,6 +17,7 @@ export class LoxValidationRegistry extends ValidationRegistry {
             BinaryExpression: validator.checkBinaryOperationAllowed,
             UnaryExpression: validator.checkUnaryOperationAllowed,
             VariableDeclaration: validator.checkVariableDeclaration,
+            MemberCall: validator.checkMemberCallArguments,
             MethodMember: validator.checkMethodReturnType,
             Class: validator.checkClassDeclaration,
             FunctionDeclaration: validator.checkFunctionReturnType
@@ -31,28 +32,72 @@ export class LoxValidationRegistry extends ValidationRegistry {
 export class LoxValidator {
 
     checkFunctionReturnType(func: FunctionDeclaration, accept: ValidationAcceptor): void {
-        this.checkFunctionReturnTypeInternal(func.body, func.returnType, accept);
+        this.checkFunctionReturnTypeInternal(func, accept);
     }
 
     checkMethodReturnType(method: MethodMember, accept: ValidationAcceptor): void {
-        this.checkFunctionReturnTypeInternal(method.body, method.returnType, accept);
+        this.checkFunctionReturnTypeInternal(method, accept);
     }
 
-    // TODO: implement classes 
-    checkClassDeclaration(declaration: Class, accept: ValidationAcceptor): void {
-        accept('error', 'Classes are currently unsupported.', {
-            node: declaration,
-            property: 'name'
-        });
-    }
-
-    private checkFunctionReturnTypeInternal(body: ExpressionBlock, returnType: TypeReference, accept: ValidationAcceptor): void {
+    checkMemberCallArguments(memberCall: MemberCall, accept: ValidationAcceptor): void {
+        if (!memberCall.explicitOperationCall) {
+            return;
+        }
         const map = this.getTypeCache();
-        const returnStatements = AstUtils.streamAllContents(body).filter(isReturnStatement).toArray();
-        const expectedType = inferType(returnType, map);
+        // the callable is either the referenced element or the result of the previous expression
+        const calleeType = memberCall.element
+            ? inferType(memberCall.element.ref, map)
+            : inferType(memberCall.previous, map);
+        // constructor calls and non-callables are handled by other checks / the linker
+        if (!isFunctionType(calleeType)) {
+            return;
+        }
+        const parameters = calleeType.parameters;
+        const args = memberCall.arguments;
+        if (args.length !== parameters.length) {
+            accept('error', `Expected ${parameters.length} argument(s) but got ${args.length}.`, {
+                node: memberCall
+            });
+            return;
+        }
+        for (let i = 0; i < args.length; i++) {
+            const argType = inferType(args[i], map);
+            if (!isAssignable(argType, parameters[i].type)) {
+                accept('error', `Type '${typeToString(argType)}' is not assignable to type '${typeToString(parameters[i].type)}'.`, {
+                    node: args[i]
+                });
+            }
+        }
+    }
+
+    checkClassDeclaration(declaration: Class, accept: ValidationAcceptor): void {
+        // walk the inheritance chain and report if we ever revisit a class
+        const visited = new Set<Class>();
+        let current: Class | undefined = declaration;
+        while (current) {
+            if (visited.has(current)) {
+                accept('error', 'Cyclic inheritance is not allowed.', {
+                    node: declaration,
+                    property: 'name'
+                });
+                return;
+            }
+            visited.add(current);
+            current = current.superClass?.ref;
+        }
+    }
+
+    private checkFunctionReturnTypeInternal(func: FunctionDeclaration | MethodMember, accept: ValidationAcceptor): void {
+        const map = this.getTypeCache();
+        // only consider returns that belong to this function, not ones nested in inner functions
+        const returnStatements = AstUtils.streamAllContents(func.body)
+            .filter(isReturnStatement)
+            .filter(returnStatement => AstUtils.getContainerOfType(returnStatement, isFunctionOrMethod) === func)
+            .toArray();
+        const expectedType = inferType(func.returnType, map);
         if (returnStatements.length === 0 && !isVoidType(expectedType)) {
             accept('error', "A function whose declared type is not 'void' must return a value.", {
-                node: returnType
+                node: func.returnType
             });
             return;
         }
@@ -123,4 +168,8 @@ export class LoxValidator {
         return new Map();
     }
 
+}
+
+function isFunctionOrMethod(node: AstNode): node is FunctionDeclaration | MethodMember {
+    return isFunctionDeclaration(node) || isMethodMember(node);
 }

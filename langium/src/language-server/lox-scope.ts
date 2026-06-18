@@ -13,14 +13,16 @@ export class LoxScopeProvider extends DefaultScopeProvider {
     override getScope(context: ReferenceInfo): Scope {
         // target element of member calls
         if (context.property === 'element') {
-            // for now, `this` and `super` simply target the container class type
+            // `this` resolves to the container class, `super` to its super class
             if (context.reference.$refText === 'this' || context.reference.$refText === 'super') {
                 const classItem = AstUtils.getContainerOfType(context.container, isClass);
                 if (classItem) {
-                    return this.scopeClassMembers(classItem);
-                } else {
-                    return EMPTY_SCOPE;
+                    const target = context.reference.$refText === 'super' ? classItem.superClass?.ref : classItem;
+                    if (target) {
+                        return this.createScope([this.descriptions.createDescription(target, context.reference.$refText)]);
+                    }
                 }
+                return EMPTY_SCOPE;
             }
             const memberCall = context.container as MemberCall;
             const previous = memberCall.previous;

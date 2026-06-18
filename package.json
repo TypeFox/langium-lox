@@ -20,6 +20,7 @@
         "watch:langium": "npm run watch:langium --workspace langium",
         "watch:esbuild": "npm run watch:esbuild --workspace vscode",
         "build": "npm run clean && npm run compile",
+        "test": "npm run test --workspace langium",
         "lint": "eslint **/src/**/*.ts",
         "vscode:prepublish": "npm run lint && npm run vscode:prepublish --workspace vscode"
     },
