@@ -1,6 +1,7 @@
 import { AstNode, EmptyFileSystem, interruptAndCheck, LangiumDocument, MaybePromise, URI } from "langium";
-import { BinaryExpression, Expression, isBinaryExpression, isBooleanExpression, isClass, isExpression, isExpressionBlock, isForStatement, isFunctionDeclaration, isIfStatement, isMemberCall, isNilExpression, isNumberExpression, isParameter, isPrintStatement, isReturnStatement, isStringExpression, isUnaryExpression, isVariableDeclaration, isWhileStatement, LoxElement, LoxProgram, MemberCall } from "../language-server/generated/ast.js";
+import { BinaryExpression, Class, Expression, FunctionDeclaration, isBinaryExpression, isBooleanExpression, isClass, isExpression, isExpressionBlock, isFieldMember, isForStatement, isFunctionDeclaration, isIfStatement, isMemberCall, isMethodMember, isNilExpression, isNumberExpression, isParameter, isPrintStatement, isReturnStatement, isStringExpression, isUnaryExpression, isVariableDeclaration, isWhileStatement, LoxElement, LoxProgram, MemberCall, MethodMember } from "../language-server/generated/ast.js";
 import { createLoxServices } from "../language-server/lox-module.js";
+import { getClassChain } from "../language-server/type-system/infer.js";
 import { v4 } from 'uuid';
 import { CancellationToken, CancellationTokenSource } from "vscode-jsonrpc";
 
@@ -27,36 +28,32 @@ export async function runInterpreter(program: string, context: InterpreterContex
 type ReturnFunction = (value: unknown) => void;
 
 interface RunnerContext {
-    variables: Variables,
+    scope: Scope,
+    globalScope: Scope,
     cancellationToken: CancellationToken,
     timeout: NodeJS.Timeout,
     log: (value: unknown) => MaybePromise<void>,
     onStart?: () => void,
 }
 
-class Variables {
+/**
+ * A lexical scope: a set of local variables plus a link to the enclosing scope.
+ * Variable lookup walks the parent chain, which is what makes closures work.
+ */
+class Scope {
 
-    private stack: Record<string, unknown>[] = [];
+    private readonly variables = new Map<string, unknown>();
 
-    enter(): void {
-        this.stack.push({});
-    }
+    constructor(private readonly parent?: Scope) {}
 
-    leave(): void {
-        this.stack.pop();
-    }
-
-    push(name: string, value: unknown): void {
-        if (this.stack.length > 0) {
-            this.stack[this.stack.length - 1][name] = value;
-        }
+    define(name: string, value: unknown): void {
+        this.variables.set(name, value);
     }
 
     set(node: AstNode, name: string, value: unknown): void {
-        for (let i = this.stack.length - 1; i >= 0; i--) {
-            const scope = this.stack[i];
-            if (Object.hasOwn(scope, name)) {
-                scope[name] = value;
+        for (let scope: Scope | undefined = this; scope; scope = scope.parent) {
+            if (scope.variables.has(name)) {
+                scope.variables.set(name, value);
                 return;
             }
         }
@@ -64,15 +61,23 @@ class Variables {
     }
 
     get(node: AstNode, name: string): unknown {
-        for (let i = this.stack.length - 1; i >= 0; i--) {
-            const scope = this.stack[i];
-            if (Object.hasOwn(scope, name)) {
-                return scope[name];
+        for (let scope: Scope | undefined = this; scope; scope = scope.parent) {
+            if (scope.variables.has(name)) {
+                return scope.variables.get(name);
             }
         }
         throw new AstNodeError(node, `No variable '${name}' defined`);
     }
 
+}
+
+/**
+ * A function value: the declaration to run paired with the scope it was defined
+ * in. Calling it runs the body with that captured scope as the parent, so the
+ * function keeps access to the variables that were in scope at its definition.
+ */
+class Closure {
+    constructor(readonly node: FunctionDeclaration | MethodMember, readonly scope: Scope) {}
 }
 
 interface BuildResult {
@@ -102,8 +107,10 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
         cancellationTokenSource.cancel();  
     }, TIMEOUT_MS);
     
+    const globalScope = new Scope();
     const context: RunnerContext = {
-        variables: new Variables(),
+        scope: globalScope,
+        globalScope,
         cancellationToken,
         timeout,
         log: outerContext.log,
@@ -111,26 +118,30 @@ export async function runProgram(program: LoxProgram, outerContext: InterpreterC
     };
 
     let end = false;
-    
-    context.variables.enter();
+
+    // hoist top-level functions so they can be called regardless of declaration order
+    hoistFunctions(program.elements, context.scope);
     if (context.onStart) {
         context.onStart();
     }
 
-    for (const statement of program.elements) {
-        await interruptAndCheck(context.cancellationToken);
+    try {
+        for (const statement of program.elements) {
+            await interruptAndCheck(context.cancellationToken);
 
-        if (!isClass(statement) && !isFunctionDeclaration(statement)) {
-            await runLoxElement(statement, context, () => { end = true });
-        } else if (isClass(statement)) {
-            throw new AstNodeError(statement, 'Classes are currently unsupported');
-        }
+            // class and function declarations are definitions; they only run when invoked
+            if (!isClass(statement) && !isFunctionDeclaration(statement)) {
+                await runLoxElement(statement, context, () => { end = true });
+            }
 
-        if (end) {
-            break;
+            if (end) {
+                break;
+            }
         }
+    } finally {
+        // release the timeout timer so it does not keep the process alive
+        clearTimeout(context.timeout);
     }
-    context.variables.leave();
 }
 
 async function runLoxElement(element: LoxElement, context: RunnerContext, returnFn: ReturnFunction): Promise<void> {
@@ -138,7 +149,10 @@ async function runLoxElement(element: LoxElement, context: RunnerContext, return
 
     if (isExpressionBlock(element)) {
         await interruptAndCheck(CancellationToken.None);
-        context.variables.enter();
+        const previousScope = context.scope;
+        context.scope = new Scope(previousScope);
+        // hoist functions so they are visible throughout the block
+        hoistFunctions(element.elements, context.scope);
         let end = false;
         const blockReturn: ReturnFunction = (value) => {
             // Yield the execution
@@ -152,10 +166,10 @@ async function runLoxElement(element: LoxElement, context: RunnerContext, return
                 break;
             }
         }
-        context.variables.leave();
+        context.scope = previousScope;
     } else if (isVariableDeclaration(element)) {
         const value = element.value ? await runExpression(element.value, context) : undefined;
-        context.variables.push(element.name, value);
+        context.scope.define(element.name, value);
     } else if (isIfStatement(element)) {
         const condition = await runExpression(element.condition, context);
         if (condition === true) {
@@ -170,7 +184,8 @@ async function runLoxElement(element: LoxElement, context: RunnerContext, return
         }
     } else if (isForStatement(element)) {
         const { counter, condition, execution, block } = element;
-        context.variables.enter();
+        const previousScope = context.scope;
+        context.scope = new Scope(previousScope);
         if (counter) {
             await runLoxElement(counter, context, returnFn);
         }
@@ -180,7 +195,7 @@ async function runLoxElement(element: LoxElement, context: RunnerContext, return
                 await runExpression(execution, context);
             }
         }
-        context.variables.leave();
+        context.scope = previousScope;
     } else if (isReturnStatement(element)) {
         const result = element.value ? await runExpression(element.value, context) : undefined;
         returnFn(result);
@@ -268,7 +283,7 @@ async function setExpressionValue(left: Expression, right: unknown, context: Run
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (previous as any)[name] = right;
         } else if (isVariableDeclaration(ref)) {
-            context.variables.set(left, name, right);
+            context.scope.set(left, name, right);
         }
     } else {
         throw new AstNodeError(left, 'Cannot assign anything to constant');
@@ -284,44 +299,79 @@ async function runMemberCall(memberCall: MemberCall, context: RunnerContext): Pr
         previous = await runExpression(memberCall.previous, context);
     }
     const ref = memberCall.element?.ref;
+    const refText = memberCall.element?.$refText;
     let value: unknown;
-    if (isFunctionDeclaration(ref)) {
-        value = ref;
+    if (refText === 'this' || refText === 'super') {
+        // `this`/`super` evaluate to the instance bound for the current method call
+        value = context.scope.get(memberCall, 'this');
+    } else if (isMethodMember(ref)) {
+        // methods are declared at the top level, so they close over the global scope
+        value = new Closure(ref, context.globalScope);
+    } else if (isFunctionDeclaration(ref)) {
+        // resolve to the closure bound when the declaration was hoisted
+        value = context.scope.get(memberCall, ref.name);
     } else if (isVariableDeclaration(ref) || isParameter(ref)) {
-        value = context.variables.get(memberCall, ref.name);
+        value = context.scope.get(memberCall, ref.name);
+    } else if (isFieldMember(ref)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        value = (previous as any)?.[ref.name];
     } else if (isClass(ref)) {
-        throw new AstNodeError(memberCall, 'Classes are currently unsupported');
+        value = ref;
     } else {
         value = previous;
     }
 
     if (memberCall.explicitOperationCall) {
-        let func;
-        if (isFunctionDeclaration(ref)) {
-            func = ref;
+        // calling a class name constructs a new instance
+        if (isClass(ref)) {
+            return createInstance(ref);
         }
-        if (isFunctionDeclaration(value)) {
-            func = value;
-        }
-        if (func) {
+        if (value instanceof Closure) {
+            const func = value.node;
             const args = await Promise.all(memberCall.arguments.map(e => runExpression(e, context)));
-            context.variables.enter();
+            const previousScope = context.scope;
+            // a call runs in a fresh scope nested in the function's defining scope
+            context.scope = new Scope(value.scope);
+            // bind `this` to the receiver instance when invoking a method
+            if (isMethodMember(func)) {
+                context.scope.define('this', previous);
+            }
             const names = func.parameters.map(e => e.name);
             for (let i = 0; i < args.length; i++) {
-                context.variables.push(names[i], args[i]);
+                context.scope.define(names[i], args[i]);
             }
             let functionValue: unknown;
             const returnFn: ReturnFunction = (returnValue) => {
                 functionValue = returnValue;
             }
             await runLoxElement(func.body, context, returnFn);
-            context.variables.leave();
+            context.scope = previousScope;
             return functionValue;
         } else {
             throw new AstNodeError(memberCall, 'Cannot call a non-function');
         }
     }
     return value;
+}
+
+function createInstance(classItem: Class): Record<string, unknown> {
+    // allocate the instance and default every field (own and inherited) to nil
+    const instance: Record<string, unknown> = {};
+    for (const member of getClassChain(classItem).flatMap(e => e.members)) {
+        if (isFieldMember(member)) {
+            instance[member.name] = null;
+        }
+    }
+    return instance;
+}
+
+function hoistFunctions(elements: LoxElement[], scope: Scope): void {
+    // bind each function declaration to a closure over the scope it is declared in
+    for (const element of elements) {
+        if (isFunctionDeclaration(element)) {
+            scope.define(element.name, new Closure(element, scope));
+        }
+    }
 }
 
 function applyOperator(node: BinaryExpression, operator: string, left: unknown, right: unknown, check?: (value: unknown) => boolean): unknown {

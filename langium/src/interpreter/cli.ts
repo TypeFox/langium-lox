@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import fs from 'fs';
 import { runInterpreter } from './runner.js';
-import pkg from '../../package.json' assert { type: 'json' };
+import pkg from '../../package.json' with { type: 'json' };
 
 const program = new Command();
 
